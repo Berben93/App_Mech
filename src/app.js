@@ -6,6 +6,8 @@ import { MODULES, getModule } from './core/registry.js';
 import { searchAll } from './core/search.js';
 import { esc, $ } from './core/dom.js';
 import { getSettings, setSetting } from './core/store.js';
+import { getFavorites, isFavorite, toggleFavorite, removeFavorite, getHistory, addHistory, clearHistory } from './core/favorites.js';
+import { collectResults, resultsText, shareLink, renderImage, shareImage, printLabel } from './core/share.js';
 
 const view = $('#view');
 const titleEl = $('#title');
@@ -13,6 +15,8 @@ const backBtn = $('#back');
 const searchInput = $('#search');
 const header = $('#app-header');
 let cleanup = null;
+// Aktuelles Modul und seine Beschriftung (für Favoriten, Verlauf und Teilen)
+let current = null;
 
 function parseHash() {
   const raw = location.hash.replace(/^#/, '') || '/';
@@ -34,9 +38,19 @@ export function navigate(parts, params, replace = false) {
 }
 
 // Ändert nur die URL (für teilbare Links), ohne die Ansicht neu aufzubauen.
-function setParams(params) {
+// `label` beschreibt den Stand kurz, z. B. "M12" oder "Ø 25 H7/g6" (für Favoriten und Verlauf).
+let historyTimer;
+function setParams(params, label) {
   const { parts } = parseHash();
-  history.replaceState(null, '', buildHash(parts, params));
+  const hash = buildHash(parts, params);
+  history.replaceState(null, '', hash);
+  if (!current) return;
+  current.hash = hash;
+  if (label) current.label = label;
+  updateFavButton();
+  clearTimeout(historyTimer);
+  const entry = { hash, module: current.mod.id, label: current.label };
+  historyTimer = setTimeout(() => addHistory(entry), 800);
 }
 
 function setChrome({ title, color, back }) {
@@ -46,9 +60,26 @@ function setChrome({ title, color, back }) {
   document.title = title === 'Tabellenbuch' ? 'Tabellenbuch' : `${title} · Tabellenbuch`;
 }
 
+function shortcut(entry, removable) {
+  const mod = getModule(entry.module);
+  if (!mod) return '';
+  return `<li class="shortcut" style="--accent:${mod.color}">
+      <a href="${esc(entry.hash)}"><span class="dot" aria-hidden="true"></span>
+        <span><strong>${esc(entry.label || mod.title)}</strong><small>${esc(mod.title)}</small></span></a>
+      ${removable ? `<button type="button" class="icon-btn small" data-unfav="${esc(entry.hash)}" aria-label="Favorit entfernen" title="Favorit entfernen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>` : ''}
+    </li>`;
+}
+
 function renderHome() {
   setChrome({ title: 'Tabellenbuch', back: false });
+  const favs = getFavorites();
+  const hist = getHistory().filter((h) => !favs.some((f) => f.hash === h.hash)).slice(0, 6);
   view.innerHTML = `
+    ${favs.length ? `<section class="shortcuts" aria-label="Favoriten"><h2 class="section-title">★ Favoriten</h2>
+      <ul>${favs.map((f) => shortcut(f, true)).join('')}</ul></section>` : ''}
+    ${hist.length ? `<section class="shortcuts" aria-label="Zuletzt verwendet"><h2 class="section-title">Zuletzt verwendet</h2>
+      <ul>${hist.map((h) => shortcut(h, false)).join('')}</ul></section>` : ''}
     <section class="tiles" aria-label="Module">
       ${MODULES.map((m) => `
         <a class="tile" href="#/m/${m.id}" style="--tile:${m.color}">
@@ -58,7 +89,12 @@ function renderHome() {
         </a>`).join('')}
     </section>
     <p class="hint">Tipp: In der Suche oben findet z. B. <a href="#/suche?q=M12">M12</a>,
-      <a href="#/suche?q=25%20H7%2Fg6">25 H7/g6</a> oder <a href="#/suche?q=1.4301">1.4301</a> direkt die passenden Werte.</p>`;
+      <a href="#/suche?q=25%20H7%2Fg6">25 H7/g6</a>, <a href="#/suche?q=1.4301">1.4301</a> oder <a href="#/suche?q=45%20HRC">45 HRC</a> direkt die passenden Werte.
+      Mit ☆ in einem Modul landet die Rechnung oben als Favorit.</p>`;
+  view.querySelectorAll('[data-unfav]').forEach((b) => b.addEventListener('click', () => {
+    removeFavorite(b.dataset.unfav);
+    renderHome();
+  }));
 }
 
 function renderSearch(q) {
@@ -92,17 +128,49 @@ function renderModule(id, params) {
   const mod = getModule(id);
   if (!mod) return renderHome();
   setChrome({ title: mod.title, color: mod.color, back: true });
-  view.innerHTML = '';
+  current = { mod, hash: location.hash, label: mod.title };
+  view.innerHTML = `<div class="mod-tools">
+      <button type="button" class="tool-btn" id="fav-btn" aria-pressed="false"><span class="star" aria-hidden="true">☆</span> <span>Favorit</span></button>
+      <button type="button" class="tool-btn" id="share-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg> <span>Teilen</span></button>
+    </div>`;
   const el = document.createElement('div');
   el.className = 'module';
   el.style.setProperty('--accent', mod.color);
   view.append(el);
+  $('#fav-btn').addEventListener('click', () => {
+    const on = toggleFavorite({ hash: current.hash, module: mod.id, label: current.label });
+    updateFavButton();
+    toast(on ? `„${current.label}“ als Favorit gespeichert` : 'Favorit entfernt');
+  });
+  $('#share-btn').addEventListener('click', () => $('#share').showModal());
   cleanup = mod.render(el, params, { navigate, setParams }) || null;
+  current.hash = location.hash;
+  updateFavButton();
+}
+
+function updateFavButton() {
+  const btn = document.getElementById('fav-btn');
+  if (!btn || !current) return;
+  const on = isFavorite(current.hash);
+  btn.setAttribute('aria-pressed', String(on));
+  btn.querySelector('.star').textContent = on ? '★' : '☆';
+  btn.title = on ? 'Favorit entfernen' : 'Als Favorit speichern';
+}
+
+let toastTimer;
+function toast(text) {
+  const t = $('#toast');
+  t.textContent = text;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
 function route() {
   if (typeof cleanup === 'function') cleanup();
   cleanup = null;
+  current = null;
   const { parts, params } = parseHash();
   header.dataset.view = parts[0] || 'home';
   if (parts[0] === 'm' && parts[1]) renderModule(parts[1], params);
@@ -132,25 +200,98 @@ $('#search-form').addEventListener('submit', (e) => {
 backBtn.addEventListener('click', () => { location.hash = '#/'; });
 window.addEventListener('hashchange', route);
 
-// Theme: auto → hell → dunkel
-const THEMES = ['auto', 'light', 'dark'];
-const THEME_LABEL = { auto: 'Design: automatisch', light: 'Design: hell', dark: 'Design: dunkel' };
-function applyTheme(theme) {
-  if (theme === 'auto') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = theme;
-  const btn = $('#theme');
-  btn.dataset.mode = theme;
-  btn.title = THEME_LABEL[theme];
-  btn.setAttribute('aria-label', THEME_LABEL[theme]);
-  const dark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+// Einstellungen: Design, Einheiten, Werkstattmodus, Rechenweg
+function applySettings() {
+  const st = getSettings();
+  const root = document.documentElement;
+  if (st.theme === 'auto') delete root.dataset.theme;
+  else root.dataset.theme = st.theme;
+  if (st.workshop) root.dataset.workshop = '';
+  else delete root.dataset.workshop;
+  const dark = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   $('meta[name="theme-color"]').setAttribute('content', dark ? '#0f1115' : '#ffffff');
+  const units = $('#units');
+  units.textContent = st.units === 'inch' ? 'in' : 'mm';
+  units.setAttribute('aria-pressed', String(st.units === 'inch'));
+  units.title = st.units === 'inch' ? 'Zoll aktiv – auf Metrisch umschalten' : 'Metrisch aktiv – auf Zoll umschalten';
+  const dlg = $('#settings');
+  dlg.querySelectorAll('.seg[data-setting] button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(st[b.parentElement.dataset.setting] === b.dataset.value));
+  });
+  dlg.querySelectorAll('input[data-setting]').forEach((i) => { i.checked = !!st[i.dataset.setting]; });
 }
-$('#theme').addEventListener('click', () => {
-  const next = THEMES[(THEMES.indexOf(getSettings().theme) + 1) % THEMES.length];
-  applyTheme(setSetting('theme', next).theme);
+
+function changeSetting(name, value) {
+  const before = getSettings()[name];
+  setSetting(name, value);
+  applySettings();
+  // Einheiten und Rechenweg wirken auf die Ergebnisse: Ansicht neu aufbauen (Eingaben stehen in der URL)
+  if ((name === 'units' || name === 'steps') && before !== value) {
+    const y = window.scrollY;
+    route();
+    window.scrollTo(0, y);
+  }
+}
+
+$('#units').addEventListener('click', () => {
+  const next = getSettings().units === 'inch' ? 'metric' : 'inch';
+  changeSetting('units', next);
+  toast(next === 'inch' ? 'Ergebnisse in Zoll (metrisch klein darunter)' : 'Ergebnisse metrisch');
 });
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(getSettings().theme));
-applyTheme(getSettings().theme);
+$('#settings-btn').addEventListener('click', () => $('#settings').showModal());
+$('#settings').addEventListener('click', (e) => {
+  const b = e.target.closest('.seg[data-setting] button');
+  if (b) changeSetting(b.parentElement.dataset.setting, b.dataset.value);
+  if (e.target === e.currentTarget) e.currentTarget.close();
+});
+$('#settings').addEventListener('change', (e) => {
+  if (e.target.dataset.setting) changeSetting(e.target.dataset.setting, e.target.checked);
+});
+$('#clear-history').addEventListener('click', () => {
+  clearHistory();
+  toast('Verlauf gelöscht');
+  if (!current && parseHash().parts.length === 0) renderHome();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySettings);
+applySettings();
+
+// Rechenweg auf-/zuklappen merkt sich die App für alle Module
+view.addEventListener('toggle', (e) => {
+  if (e.target.matches?.('details.steps') && e.isTrusted) setSetting('steps', e.target.open);
+}, true);
+
+// Teilen
+$('#share').addEventListener('click', async (e) => {
+  if (e.target === e.currentTarget) { e.currentTarget.close(); return; }
+  const b = e.target.closest('[data-share]');
+  if (!b || !current) return;
+  const dlg = $('#share');
+  const url = location.href;
+  const title = current.label && current.label !== current.mod.title ? `${current.mod.title}: ${current.label}` : current.mod.title;
+  const groups = collectResults(view);
+  const kind = b.dataset.share;
+  if (kind !== 'link' && !groups.length) { toast('Hier gibt es noch kein Ergebnis zum Teilen.'); return; }
+  dlg.close();
+  if (kind === 'link') {
+    const r = await shareLink({ title, text: title, url });
+    if (r === 'copied') toast('Link kopiert');
+  } else if (kind === 'text') {
+    const text = resultsText(title, groups, url);
+    try {
+      if (navigator.share) await navigator.share({ title, text });
+      else { await navigator.clipboard.writeText(text); toast('Ergebnis als Text kopiert'); }
+    } catch (err) {
+      if (err?.name !== 'AbortError') toast('Teilen nicht möglich');
+    }
+  } else if (kind === 'image') {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const canvas = renderImage({ title, groups, color: current.mod.color, url, dark });
+    const r = await shareImage(canvas, `${current.mod.id}.png`, title);
+    if (r === 'downloaded') toast('Bild gespeichert');
+  } else if (kind === 'label') {
+    printLabel({ title, groups, url, color: current.mod.color });
+  }
+});
 
 // Offline: Service Worker registrieren (nur über http(s), nicht file://)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

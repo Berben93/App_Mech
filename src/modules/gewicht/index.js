@@ -1,4 +1,4 @@
-import { esc, fmt, num, options, result, table, normalize } from '../../core/dom.js';
+import { esc, fmt, num, options, result, table, normalize, steps } from '../../core/dom.js';
 import { load, save } from '../../core/store.js';
 import { MATERIALS, SHAPES } from './data.js';
 import { weight } from './calc.js';
@@ -136,7 +136,8 @@ function render(el, params, ctx) {
     const L = num(values.L);
     const n = num(values.n) || 1;
     const price = num(values.preis);
-    ctx.setParams({ f: shape.id, w: matId, ...Object.fromEntries([...shape.fields.map(([k]) => k), 'L', 'n', 'preis'].map((k) => [k, values[k]])) });
+    ctx.setParams({ f: shape.id, w: matId, ...Object.fromEntries([...shape.fields.map(([k]) => k), 'L', 'n', 'preis'].map((k) => [k, values[k]])) },
+      `${shape.name} ${shape.fields.map(([k]) => values[k]).join('×')}${shape.volume ? '' : ` × ${values.L}`} · ${mat.name}`);
     const r = weight(shape.id, dims, L, mat.rho);
     if (!r || !Number.isFinite(r.mass)) {
       out.innerHTML = `<h2>Ergebnis</h2>${crossSection(shape, dims)}<p class="warn-text">Maße prüfen (Wanddicke kleiner als halber Durchmesser bzw. halbe Seite).</p>`;
@@ -152,6 +153,11 @@ function render(el, params, ctx) {
         ${result('Volumen je Stück', fmt(r.volume, 2), 'cm³')}
         ${price > 0 ? result('Materialpreis', fmt(r.mass * n * price, 2), '€') : ''}
       </div>
+      ${steps([
+        r.area !== null ? { title: 'Querschnittsfläche', formula: `A (${esc(shape.name)})`, values: shape.fields.map(([k]) => `${k} = ${fmt(dims[k])} mm`).join(', '), result: `${fmt(r.area, 1)} mm²` } : null,
+        { title: 'Volumen', formula: r.area !== null ? 'V = A · L / 1000' : 'V = π/6 · d³ / 1000', values: r.area !== null ? `V = ${fmt(r.area, 1)} · ${fmt(L)} / 1000` : `V = π/6 · ${fmt(dims.d)}³ / 1000`, result: `${fmt(r.volume, 2)} cm³` },
+        { title: 'Masse', formula: 'm = V · ρ / 1000', values: `m = ${fmt(r.volume, 2)} · ${fmt(mat.rho)} / 1000`, result: `${fmt(r.mass, 3)} kg` },
+      ])}
       <p class="note">Dichte ${fmt(mat.rho)} g/cm³. Kantenradien bei Rohren und Profilen sind nicht berücksichtigt.</p>`;
   }
 

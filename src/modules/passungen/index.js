@@ -102,7 +102,7 @@ function render(el, params, ctx) {
     const d = num(v.d);
     const h = v.hl + v.hg;
     const s = v.sl + v.sg;
-    ctx.setParams({ d: v.d, h, s });
+    ctx.setParams({ d: v.d, h, s }, `Ø ${v.d} ${h}/${s}`);
     el.querySelectorAll('#fit-chips .chip').forEach((c) => c.classList.toggle('active', c.dataset.fit === `${h}/${s}`));
     renderIt(d);
     if (!(d > 0 && d <= MAX_NOMINAL)) {

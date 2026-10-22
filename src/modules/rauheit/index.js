@@ -1,4 +1,4 @@
-import { esc, fmt, num, result, table, formValues } from '../../core/dom.js';
+import { esc, fmt, num, result, table, formValues, steps } from '../../core/dom.js';
 import { N_CLASSES, PROCESSES } from './data.js';
 import { theoreticalRoughness, maxFeedForRa, maxFeedForRz, nClassFor } from './calc.js';
 
@@ -52,7 +52,7 @@ function render(el, params, ctx) {
 
   function update() {
     const v = formValues(form);
-    ctx.setParams(v);
+    ctx.setParams(v, `f ${v.f} · r ${v.r}`);
     const f = num(v.f);
     const r = num(v.r);
     const ra = num(v.ra);
@@ -64,7 +64,12 @@ function render(el, params, ctx) {
          ${result('R<sub>th</sub> (≈ Rz)', fmt(th.Rth, 2), 'µm')}
          ${result('Klasse', cls ? `${cls.n} (Ra ${fmt(cls.ra)})` : '–')}
          ${fmax ? result(`Max. Vorschub für Ra ${fmt(ra)}`, fmt(fmax, 3), 'mm/U') : ''}
-         ${fmax ? result(`Max. Vorschub für Rz ${fmt(ra * 6)} (≈ 6·Ra)`, fmt(maxFeedForRz(ra * 6, r), 3), 'mm/U') : ''}`
+         ${fmax ? result(`Max. Vorschub für Rz ${fmt(ra * 6)} (≈ 6·Ra)`, fmt(maxFeedForRz(ra * 6, r), 3), 'mm/U') : ''}
+         ${steps([
+           { title: 'Theoretische Rautiefe', formula: 'R<sub>th</sub> = f² / (8·r) · 1000', values: `R<sub>th</sub> = ${fmt(f)}² / (8·${fmt(r)}) · 1000`, result: `${fmt(th.Rth, 2)} µm` },
+           { title: 'Mittenrauwert', formula: 'Ra ≈ f² / (31,2·r) · 1000', values: `Ra ≈ ${fmt(f)}² / (31,2·${fmt(r)}) · 1000`, result: `${fmt(th.Ra, 2)} µm` },
+           fmax ? { title: `Größter Vorschub für Ra ${fmt(ra)} µm`, formula: 'f = √(Ra · 31,2 · r / 1000)', values: `f = √(${fmt(ra)} · 31,2 · ${fmt(r)} / 1000)`, result: `${fmt(fmax, 3)} mm/U` } : null,
+         ])}`
       : '<p class="warn-text">Vorschub und Radius eingeben.</p>';
     el.querySelector('#ra-chart').innerHTML = processChart(ra > 0 ? ra : null);
     el.querySelector('#ra-table').innerHTML = table(['Klasse', 'Ra µm', 'Rz ≈ µm', 'Ra µinch', 'Typisch'],

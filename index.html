@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tabellenbuch</title>
-  <meta name="description" content="Tabellenbuch für die Zerspanung: Passungen, Toleranzen, Gewinde, Schnittwerte, Drehmomente, Rauheit, Gewicht und Einheiten. Offline, ohne Werbung, ohne Konto.">
+  <meta name="description" content="Tabellenbuch für die Zerspanung: Passungen, Toleranzen, Gewinde, Schnittwerte, Werkstoffe, Härte, Normteile, Biegen, Kosten und mehr. Offline, ohne Werbung, ohne Konto.">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -16,6 +16,7 @@
     try {
       var s = JSON.parse(localStorage.getItem('wtb:settings') || '{}');
       if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;
+      if (s.workshop) document.documentElement.dataset.workshop = '';
     } catch (e) {}
   </script>
   <link rel="stylesheet" href="src/styles.css">
@@ -28,10 +29,9 @@
       </button>
       <h1 id="title">Tabellenbuch</h1>
       <span id="offline" class="offline" hidden>offline</span>
-      <button id="theme" class="icon-btn" type="button" aria-label="Design umschalten">
-        <svg class="i-auto" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" class="fill"/></svg>
-        <svg class="i-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-        <svg class="i-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      <button id="units" class="units-btn" type="button" aria-label="Einheiten umschalten" title="Zoll/Metrisch umschalten">mm</button>
+      <button id="settings-btn" class="icon-btn" type="button" aria-label="Einstellungen" title="Einstellungen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       </button>
     </div>
     <form id="search-form" class="search" role="search">
@@ -40,6 +40,41 @@
     </form>
   </header>
   <main id="view" class="view"></main>
+  <dialog id="settings" class="sheet" aria-labelledby="settings-title">
+    <form method="dialog">
+      <h2 id="settings-title">Einstellungen</h2>
+      <fieldset class="opt"><legend>Design</legend>
+        <div class="seg" data-setting="theme">
+          <button type="button" data-value="auto">Automatisch</button><button type="button" data-value="light">Hell</button><button type="button" data-value="dark">Dunkel</button>
+        </div>
+      </fieldset>
+      <fieldset class="opt"><legend>Einheiten (ganze App)</legend>
+        <div class="seg" data-setting="units">
+          <button type="button" data-value="metric">Metrisch (mm)</button><button type="button" data-value="inch">Zoll (in)</button>
+        </div>
+      </fieldset>
+      <label class="switch"><input type="checkbox" data-setting="workshop"><span><strong>Werkstattmodus</strong><small>Große Schrift, hoher Kontrast, große Tasten für Handschuhe</small></span></label>
+      <label class="switch"><input type="checkbox" data-setting="steps"><span><strong>Rechenweg immer aufklappen</strong><small>Formel und eingesetzte Werte unter jedem Ergebnis</small></span></label>
+      <div class="sheet-actions">
+        <button type="button" class="btn secondary small" id="clear-history">Verlauf löschen</button>
+        <button class="btn">Fertig</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="share" class="sheet" aria-labelledby="share-title">
+    <form method="dialog">
+      <h2 id="share-title">Ergebnis teilen</h2>
+      <div class="share-options">
+        <button type="button" class="btn" data-share="link">Link</button>
+        <button type="button" class="btn" data-share="text">Text</button>
+        <button type="button" class="btn" data-share="image">Bild</button>
+        <button type="button" class="btn" data-share="label">Etikett drucken</button>
+      </div>
+      <p class="note">Der Link enthält alle Eingaben und öffnet genau diese Rechnung. Das Etikett passt auf 62-mm-Etikettenrollen oder ins Prüfprotokoll.</p>
+      <div class="sheet-actions"><button class="btn secondary">Schließen</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <noscript><p class="empty">Diese App braucht JavaScript.</p></noscript>
   <script type="module" src="src/app.js"></script>
 </body>

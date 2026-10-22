@@ -115,7 +115,7 @@ function render(el, params, ctx) {
     const list = listFor(type);
     const current = (id && findThread(type, id)) || list[0];
     id = threadId(current);
-    ctx.setParams({ t: type, id });
+    ctx.setParams({ t: type, id }, current.name);
     el.querySelectorAll('[data-t]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.t === type)));
     el.querySelector('#th-title').textContent = TYPES.find((t) => t.key === type).title;
     const cols = columnsFor(type);

@@ -38,7 +38,7 @@ function render(el, params, ctx) {
   function update() {
     const v = formValues(form);
     const d = num(v.d);
-    ctx.setParams({ d: v.d, k: v.k, k2: v.k2 });
+    ctx.setParams({ d: v.d, k: v.k, k2: v.k2 }, `${v.d} mm · ${v.k}${v.k2}`);
     const head = ['Nennmaß', ...CLASSES_1.map((c) => `${c.key} (${c.name})`)];
     el.querySelector('#t-linear').innerHTML = table(head, rows1(LINEAR, d, pm));
     el.querySelector('#t-radius').innerHTML = table(head, rows1(RADIUS, d, pm));
