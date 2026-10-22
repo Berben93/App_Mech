@@ -1,5 +1,7 @@
 // Kleine Helfer für DOM und Zahlenformat. Bewusst ohne Framework,
 // damit die App ohne Build-Schritt und komplett offline läuft.
+import { isInch, toImperial } from './units.js';
+import { getSettings } from './store.js';
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
@@ -65,10 +67,36 @@ export function table(head, rows, cls = '') {
     + `<tbody>${rows.map((r) => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${(r.cells || r).map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
-/** Ergebniszeile: Bezeichnung, Wert, Einheit. */
+/**
+ * Ergebniszeile: Bezeichnung, Wert, Einheit.
+ * Im Zoll-Modus wird der Wert umgerechnet; der metrische Wert steht klein darunter.
+ */
 export function result(label, value, unit = '', big = false) {
+  const imp = unit && isInch() ? toImperial(String(value), unit) : null;
+  const shown = imp
+    ? `${imp.text} <small>${imp.unit}</small><small class="alt">${value} ${unit}</small>`
+    : `${value}${unit ? ` <small>${unit}</small>` : ''}`;
   return `<div class="result${big ? ' result-big' : ''}"><span class="result-label">${label}</span>`
-    + `<span class="result-value">${value}${unit ? ` <small>${unit}</small>` : ''}</span></div>`;
+    + `<span class="result-value">${shown}</span></div>`;
+}
+
+/**
+ * Aufklappbarer Rechenweg für Azubis.
+ * steps: [{ title, formula, values, result }] – alles bereits als HTML (escaped).
+ *   formula  allgemeine Formel, z. B. "n = v<sub>c</sub>·1000 / (π·d)"
+ *   values   mit eingesetzten Werten, z. B. "n = 200·1000 / (π·50)"
+ *   result   Ergebnis mit Einheit, z. B. "1273 1/min"
+ */
+export function steps(list, title = 'Rechenweg') {
+  const items = list.filter(Boolean);
+  if (!items.length) return '';
+  const open = getSettings().steps ? ' open' : '';
+  return `<details class="steps"${open}><summary>${title}</summary><ol>${items.map((s) => `<li>
+      ${s.title ? `<span class="step-title">${s.title}</span>` : ''}
+      ${s.formula ? `<code class="step-formula">${s.formula}</code>` : ''}
+      ${s.values ? `<code class="step-values">${s.values}</code>` : ''}
+      ${s.result ? `<span class="step-result">= ${s.result}</span>` : ''}
+    </li>`).join('')}</ol></details>`;
 }
 
 /** Für Vergleiche: klein, ohne Akzente, ß → ss. */

@@ -43,7 +43,7 @@ function render(el, params, ctx) {
   }
 
   function update() {
-    ctx.setParams({ k: cat.id, e: unit, x: input });
+    ctx.setParams({ k: cat.id, e: unit, x: input }, `${input} ${unit}`);
     const v = parseNumber(input);
     el.querySelector('#un-out').innerHTML = Number.isFinite(v)
       ? conversions(v, cat.id, unit).map(([u, r]) => result(esc(u), smart(r))).join('')

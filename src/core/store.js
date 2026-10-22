@@ -21,8 +21,14 @@ export function save(key, value) {
   }
 }
 
-/** Einstellungen der ganzen App (Theme, später Zoll/Metrisch, Sprache, Werkstattmodus). */
-const DEFAULT_SETTINGS = { theme: 'auto' };
+/**
+ * Einstellungen der ganzen App.
+ *   theme     auto | light | dark
+ *   units     metric | inch (Ergebnisse zusätzlich bzw. vorrangig in Zoll)
+ *   workshop  Werkstattmodus: große Schrift, hoher Kontrast, große Tasten
+ *   steps     Rechenweg standardmäßig aufgeklappt
+ */
+const DEFAULT_SETTINGS = { theme: 'auto', units: 'metric', workshop: false, steps: false };
 
 export function getSettings() {
   return { ...DEFAULT_SETTINGS, ...load('settings', {}) };

@@ -1,4 +1,4 @@
-import { esc, fmt, num, options, table, result, formValues } from '../../core/dom.js';
+import { esc, fmt, num, options, table, result, formValues, steps } from '../../core/dom.js';
 import { METRIC_COARSE, METRIC_FINE } from '../gewinde/data.js';
 import { SCREW_SIZES, PROPERTY_CLASSES, FRICTION } from './data.js';
 import { tighteningTorque, screwSize } from './calc.js';
@@ -39,8 +39,8 @@ function render(el, params, ctx) {
 
   function update() {
     const v = formValues(form);
-    ctx.setParams({ g: v.g, k: v.k, mu: v.mu, nu: v.nu });
     const [d, p] = v.g.split('x').map(Number);
+    ctx.setParams({ g: v.g, k: v.k, mu: v.mu, nu: v.nu }, `M${fmt(d)}${METRIC_COARSE.some((t) => t.d === d && t.p === p) ? '' : `×${fmt(p)}`} · ${v.k}`);
     const mu = Number(v.mu);
     const nu = num(v.nu) / 100;
     const r = nu > 0 && nu <= 1 ? tighteningTorque({ d, p, cls: v.k, muG: mu, muK: mu, nu }) : null;
@@ -56,6 +56,12 @@ function render(el, params, ctx) {
           ${result('Streckgrenze R<sub>p0,2</sub>', fmt(r.rp), 'N/mm²')}
           ${s ? result('Schlüsselweite / Innen-6kt', `${fmt(s.sw)} / ${fmt(s.isk)}`, 'mm') : ''}
         </div>
+        ${steps([
+          { title: 'Spannungsquerschnitt', formula: 'A<sub>s</sub> = π/4 · ((d₂ + d₃)/2)²', values: `A<sub>s</sub> = π/4 · ((${fmt(r.d2, 3)} + ${fmt(r.d3, 3)})/2)²`, result: `${fmt(r.As, 1)} mm²` },
+          { title: 'Zulässige Montagevorspannung (Zug + Torsion)', formula: 'σ<sub>M</sub> = ν·R<sub>p0,2</sub> / √(1 + 3·[1,5·d₂/d₀·(P/(π·d₂) + 1,155·µ<sub>G</sub>)]²)', values: `σ<sub>M</sub> = ${fmt(r.nu)}·${fmt(r.rp)} / √(1 + 3·[1,5·${fmt(r.d2, 3)}/${fmt(r.d0, 3)}·(${fmt(r.p)}/(π·${fmt(r.d2, 3)}) + 1,155·${fmt(r.muG)})]²)`, result: `${fmt(r.sigmaM, 0)} N/mm²` },
+          { title: 'Montagevorspannkraft', formula: 'F<sub>M</sub> = σ<sub>M</sub> · A<sub>s</sub>', values: `F<sub>M</sub> = ${fmt(r.sigmaM, 0)} · ${fmt(r.As, 1)}`, result: `${fmt(r.FM / 1000, 1)} kN` },
+          { title: 'Anziehdrehmoment', formula: 'M<sub>A</sub> = F<sub>M</sub> · (0,16·P + 0,58·d₂·µ<sub>G</sub> + D<sub>Km</sub>/2·µ<sub>K</sub>)', values: `M<sub>A</sub> = ${fmt(r.FM, 0)} N · (0,16·${fmt(r.p)} + 0,58·${fmt(r.d2, 3)}·${fmt(r.muG)} + ${fmt(r.DKm, 2)}/2·${fmt(r.muK)}) mm`, result: `${fmt(r.MA, 1)} Nm` },
+        ])}
         <p class="note">Richtwert für Schaftschrauben mit Kopfauflage ≈ Schlüsselweite und Durchgangsbohrung „mittel“.
           Drehmomentschlüssel streuen ±(3–5) %, Reibwerte deutlich mehr. Für sicherheitsrelevante Verbindungen eine vollständige VDI-2230-Rechnung machen.</p>`;
     }
