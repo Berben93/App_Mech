@@ -93,7 +93,7 @@ function render(el, params, ctx) {
       </form>
       <section class="card" id="wt-out" aria-live="polite"></section>
     </div>
-    <section class="card">
+    <section class="card adv">
       <h2>Eigene Werkstoffe</h2>
       <form class="grid" id="own-form" autocomplete="off">
         <label class="field"><span>Bezeichnung</span><input name="name" placeholder="z. B. Hardox 450" required></label>
@@ -103,7 +103,7 @@ function render(el, params, ctx) {
       </form>
       <div id="own-list" style="margin-top:12px"></div>
     </section>
-    <section class="card"><h2>Dichten (g/cm³)</h2><div id="rho-table"></div></section>`;
+    <section class="card adv"><h2>Dichten (g/cm³)</h2><div id="rho-table"></div></section>`;
 
   const form = el.querySelector('#wt-form');
   const out = el.querySelector('#wt-out');
@@ -122,10 +122,11 @@ function render(el, params, ctx) {
   }
 
   function buildFields() {
-    const fields = [...shape.fields, ...(shape.volume ? [] : [['L', 'Länge L', 1000]]), ['n', 'Stückzahl', 1], ['preis', 'Preis €/kg (optional)', '']];
-    el.querySelector('#wt-fields').innerHTML = fields.map(([name, label, def]) => {
+    const len = [...shape.fields.map(([k]) => k), 'L'];
+    const fields = [...shape.fields, ...(shape.volume ? [] : [['L', 'Länge L', 1000]]), ['n', 'Stückzahl', 1, true], ['preis', 'Preis €/kg (optional)', '', true]];
+    el.querySelector('#wt-fields').innerHTML = fields.map(([name, label, def, adv]) => {
       if (values[name] === undefined) values[name] = String(def);
-      return `<label class="field"><span>${label}</span><input name="${name}" inputmode="decimal" value="${esc(values[name])}"></label>`;
+      return `<label class="field${adv ? ' adv' : ''}"><span>${label}</span><input name="${name}" inputmode="decimal" value="${esc(values[name])}"${len.includes(name) ? ' data-unit="mm"' : ''}></label>`;
     }).join('');
     el.querySelectorAll('[data-f]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === shape.id)));
   }
@@ -149,9 +150,11 @@ function render(el, params, ctx) {
         ${result(n > 1 ? `Gewicht gesamt (${fmt(n)} Stk.)` : 'Gewicht', fmt(r.mass * n, r.mass * n < 10 ? 3 : 2), 'kg', true)}
         ${n > 1 ? result('Gewicht je Stück', fmt(r.mass, 3), 'kg') : ''}
         ${r.perMeter !== null ? result('Metergewicht', fmt(r.perMeter, 3), 'kg/m') : ''}
+        ${price > 0 ? result('Materialpreis', fmt(r.mass * n * price, 2), '€') : ''}
+        <div class="adv">
         ${r.area !== null ? result('Querschnitt', fmt(r.area, 1), 'mm²') : ''}
         ${result('Volumen je Stück', fmt(r.volume, 2), 'cm³')}
-        ${price > 0 ? result('Materialpreis', fmt(r.mass * n * price, 2), '€') : ''}
+        </div>
       </div>
       ${steps([
         r.area !== null ? { title: 'Querschnittsfläche', formula: `A (${esc(shape.name)})`, values: shape.fields.map(([k]) => `${k} = ${fmt(dims[k])} mm`).join(', '), result: `${fmt(r.area, 1)} mm²` } : null,

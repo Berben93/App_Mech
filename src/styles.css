@@ -387,3 +387,67 @@ pre.code {
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Einfache Ansicht: Erweitertes (.adv) und Rechenweg erst nach „Mehr anzeigen“ */
+:root[data-simple] .module:not(.show-adv) .adv { display: none !important; }
+:root[data-simple]:not([data-steps-open]) .module:not(.show-adv) details.steps { display: none; }
+.results > .adv { display: contents; }
+.more-btn { display: block; width: 100%; margin: 4px 0 14px; }
+.opt-note { margin: 6px 0 4px; }
+
+/* Längenfelder: mm-Wert unter einer Zoll-Eingabe */
+.len-hint { font-size: .8rem; color: var(--muted); }
+
+/* Meine Schnittdaten */
+.cd-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.cd-search { flex: 1; min-width: 200px; }
+.cd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; margin-bottom: 14px; }
+.cd-entry { background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+.cd-entry header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.cd-entry header small { flex-basis: 100%; color: var(--muted); }
+.cd-proc { background: color-mix(in srgb, var(--accent) 18%, transparent); font-size: .78rem; }
+.cd-values { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 4px; }
+.cd-values > span { display: flex; flex-direction: column; font-weight: 700; font-size: 1.05rem; }
+.cd-values small { font-weight: 500; color: var(--muted); font-size: .75rem; }
+.cd-meta { margin: 4px 0 8px; }
+.cd-file { display: inline-grid; place-items: center; cursor: pointer; }
+.cd-offer { border-color: var(--accent); }
+
+/* Lernen & Quiz */
+.qz-card { max-width: 720px; }
+.qz-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.qz-progress { color: var(--muted); font-size: .9rem; }
+.qz-score { margin-left: auto; font-weight: 700; color: var(--accent); }
+.qz-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin-bottom: 14px; }
+.qz-bar span { display: block; height: 100%; background: var(--accent); transition: width .3s ease; }
+.qz-q { font-size: 1.2rem; margin: 6px 0 14px; line-height: 1.3; }
+.qz-symbol { width: 72px; height: 72px; stroke-width: 1.6; color: var(--accent); display: block; margin: 4px 0 8px; }
+.qz-options { display: grid; gap: 8px; }
+.qz-opt {
+  min-height: var(--tap); padding: 10px 14px; text-align: left;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--surface-2); color: var(--text);
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.qz-opt:hover:not(:disabled) { border-color: var(--accent); }
+.qz-opt:disabled { cursor: default; opacity: .75; }
+.qz-opt.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--surface)); opacity: 1; }
+.qz-opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--surface)); opacity: 1; }
+.qz-explain { margin-top: 14px; padding: 12px 14px; border-radius: 12px; border-left: 5px solid var(--good); background: var(--surface-2); }
+.qz-explain.bad { border-left-color: var(--bad); }
+.qz-explain p { margin: 6px 0; }
+.qz-next { margin-top: 12px; width: 100%; }
+.qz-final { font-size: 1.1rem; }
+
+/* Gewinde per Foto */
+.pm-file { display: inline-grid; place-items: center; cursor: pointer; }
+.pm-pairs button { display: inline-flex; align-items: center; gap: 8px; }
+.pm-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--pair); background: transparent; }
+.pm-pairs button.done .pm-dot { background: var(--pair); }
+.pm-pairs button[aria-pressed="true"] { background: var(--pair); border-color: var(--pair); }
+.pm-pairs button[aria-pressed="true"] .pm-dot { border-color: #fff; }
+.pm-stage { position: relative; margin-top: 10px; border-radius: 12px; overflow: hidden; background: var(--surface-2); min-height: 120px; }
+#pm-canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; }
+.pm-loupe { position: absolute; width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 4px 16px rgb(0 0 0 / 45%); pointer-events: none; }
+.pm-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; margin: 0; }
+.pm-howto summary { cursor: pointer; min-height: 36px; display: flex; align-items: center; }
+.pm-howto ol { margin-top: 8px; }

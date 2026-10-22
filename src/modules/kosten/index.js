@@ -1,16 +1,17 @@
 import { esc, fmt, num, result, table, formValues, steps } from '../../core/dom.js';
 import { jobCost, priceScale, formatDuration } from './calc.js';
 
+// [Name, Beschriftung, Standardwert, erweitert]
 const FIELDS = [
   ['m', 'Losgröße (Stück)', '50'],
   ['tr', 'Rüstzeit t<sub>r</sub> (min)', '60'],
   ['th', 'Hauptzeit t<sub>h</sub> (min/Stk)', '4.5'],
   ['tn', 'Nebenzeit t<sub>n</sub> (min/Stk)', '1'],
-  ['z', 'Verteilzeit (%)', '10'],
+  ['z', 'Verteilzeit (%)', '10', true],
   ['rate', 'Stundensatz (€/h)', '85'],
   ['mat', 'Material (€/Stk)', '3.20'],
-  ['ext', 'Fremdleistung (€/Stk)', '0'],
-  ['margin', 'Zuschlag Gewinn/Wagnis (%)', '15'],
+  ['ext', 'Fremdleistung (€/Stk)', '0', true],
+  ['margin', 'Zuschlag Gewinn/Wagnis (%)', '15', true],
 ];
 
 const eur = (v, d = 2) => `${fmt(v, d)} €`;
@@ -40,12 +41,12 @@ function render(el, params, ctx) {
     <div class="grid-2">
       <form class="card" id="ko-form" autocomplete="off">
         <h2>Eingaben</h2>
-        <div class="grid">${FIELDS.map(([n, l, d]) => `<label class="field"><span>${l}</span><input name="${n}" inputmode="decimal" value="${esc(params[n] ?? d)}"></label>`).join('')}</div>
+        <div class="grid">${FIELDS.map(([n, l, d, adv]) => `<label class="field${adv ? ' adv' : ''}"><span>${l}</span><input name="${n}" inputmode="decimal" value="${esc(params[n] ?? d)}"></label>`).join('')}</div>
         <p class="note">Hauptzeit steht im Modul <a href="#/m/schnittwerte">Schnittwerte</a> (t<sub>h</sub> = L / v<sub>f</sub>). Stundensatz inklusive Maschine, Personal und Gemeinkosten.</p>
       </form>
       <section class="card" id="ko-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>Preisstaffel</h2><div id="ko-scale"></div></section>`;
+    <section class="card adv"><h2>Preisstaffel</h2><div id="ko-scale"></div></section>`;
 
   const form = el.querySelector('#ko-form');
   const out = el.querySelector('#ko-out');
@@ -66,11 +67,13 @@ function render(el, params, ctx) {
         ${result('Angebotspreis je Stück', eur(r.unitPrice), '', true)}
         ${result('Angebotspreis gesamt', eur(r.price))}
         ${result('Zeit je Stück t<sub>e</sub>', formatDuration(r.te))}
+        <div class="adv">
         ${result('Auftragszeit T', formatDuration(r.T))}
         ${result('Fertigungskosten', eur(r.production))}
         ${result('davon Rüsten', eur(r.setupShare))}
         ${result('Material und Fremdleistung', eur(r.material))}
         ${result('Selbstkosten je Stück', eur(r.unitCost))}
+        </div>
       </div>
       ${steps([
         { title: 'Zeit je Einheit', formula: 't<sub>e</sub> = (t<sub>h</sub> + t<sub>n</sub>) · (1 + Verteilzeit)', values: `t<sub>e</sub> = (${fmt(input.th)} + ${fmt(input.tn)}) · (1 + ${fmt(input.z)} %)`, result: `${fmt(r.te, 2)} min` },

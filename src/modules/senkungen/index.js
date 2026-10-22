@@ -70,17 +70,17 @@ function render(el, params, ctx) {
         <h2>Eingaben</h2>
         <div class="grid">
           <label class="field"><span>Schraube</span><select name="d">${options(sizes.map((d) => [d, `M${fmt(d)}`]), params.d || '6')}</select></label>
-          <label class="field"><span>Senkwinkel für Rechner</span><select name="a">${options(ANGLES.map((a) => [a, `${a}°`]), params.a || '90')}</select></label>
-          <label class="field"><span>Eigener Senk-Ø (mm)</span><input name="x" inputmode="decimal" value="${esc(params.x || '')}" placeholder="optional"></label>
+          <label class="field adv"><span>Senkwinkel für Rechner</span><select name="a">${options(ANGLES.map((a) => [a, `${a}°`]), params.a || '90')}</select></label>
+          <label class="field adv"><span>Eigener Senk-Ø (mm)</span><input name="x" inputmode="decimal" value="${esc(params.x || '')}" placeholder="optional"></label>
         </div>
-        <p class="note">Mit eigenem Senk-Ø rechnet der Kegelrechner Tiefe und Z-Zustellung für jeden Senkwinkel, z. B. 82° für Zollschrauben oder 60° für Zentrierungen.</p>
+        <p class="note adv">Mit eigenem Senk-Ø rechnet der Kegelrechner Tiefe und Z-Zustellung für jeden Senkwinkel, z. B. 82° für Zollschrauben oder 60° für Zentrierungen.</p>
       </form>
       <section class="card" id="sk-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>Kegelsenkungen 90° (ISO 15065)</h2>
+    <section class="card adv"><h2>Kegelsenkungen 90° (ISO 15065)</h2>
       ${table(['Schraube', 'Durchgang d₁ H13', 'Senk-Ø d₂', 'Tiefe ≈'], COUNTERSINK.map((c) => [`<strong>M${fmt(c.d)}</strong>`, fmt(c.d1), fmt(c.d2), fmt((c.d2 - c.d1) / 2, 2)]))}
       <p class="note">Für Senkschrauben mit Kopf nach ISO 7721 (ISO 2009, ISO 7046, ISO 1482, ISO 10642 bis M10). Senk-Ø als Mindestmaß, damit der Kopf nicht übersteht.</p></section>
-    <section class="card"><h2>Zylindersenkungen für ISO 4762 (DIN 974-2)</h2>
+    <section class="card adv"><h2>Zylindersenkungen für ISO 4762 (DIN 974-2)</h2>
       ${table(['Schraube', 'Durchgang d₁', 'Senk-Ø d₂ H13', 'Senktiefe t'], COUNTERBORE.map((c) => [`<strong>M${fmt(c.d)}</strong>`, fmt(c.d1), fmt(c.d2), fmt(c.t, 1)]))}
       <p class="note">Ohne Unterlegscheibe, Kopf bündig. Mit Scheibe oder Federring Senk-Ø und Tiefe entsprechend vergrößern.</p></section>`;
     const form = body.querySelector('#sk-form');
@@ -101,9 +101,11 @@ function render(el, params, ctx) {
         <div class="results">
           ${result('Durchgangsbohrung d₁', fmt(d1), 'mm', true)}
           ${cs ? result('Kegelsenkung 90° Ø d₂ (ISO 15065)', fmt(cs.d2), 'mm') : ''}
+          ${cb ? result('Zylindersenkung Ø × Tiefe (ISO 4762)', `${fmt(cb.d2)} × ${fmt(cb.t, 1)}`, 'mm') : ''}
+          <div class="${own > 0 ? '' : 'adv'}">
           ${cone ? result(`${own > 0 ? 'Eigene ' : ''}Kegelsenkung ${angle}° Tiefe`, fmt(cone.depth, 2), 'mm') : ''}
           ${cone ? result('Z-Zustellung spitzer Senker ab Oberfläche', fmt(cone.tipZ, 2), 'mm') : ''}
-          ${cb ? result('Zylindersenkung Ø × Tiefe (ISO 4762)', `${fmt(cb.d2)} × ${fmt(cb.t, 1)}`, 'mm') : ''}
+          </div>
         </div>
         ${!cs ? '<p class="note">Kegelsenkungen nach ISO 15065 gibt es bis M10; für größere Senkschrauben Kopfmaß der Schraube nehmen.</p>' : ''}
         ${cone ? steps([
@@ -131,9 +133,9 @@ function render(el, params, ctx) {
       </form>
       <section class="card" id="fr-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>DIN 76-1 Außengewinde (Form A / B)</h2>
+    <section class="card adv"><h2>DIN 76-1 Außengewinde (Form A / B)</h2>
       ${table(['P', 'd<sub>g</sub> h13', 'g₁ min A', 'g₂ max A', 'g₁ min B', 'g₂ max B', 'r'], UNDERCUT_EXT.map((r) => [fmt(r.p), `d − ${fmt(r.x)}`, fmt(r.a[0]), fmt(r.a[1]), fmt(r.b[0]), fmt(r.b[1]), fmt(r.r)]))}</section>
-    <section class="card"><h2>DIN 76-1 Innengewinde (Form C / D)</h2>
+    <section class="card adv"><h2>DIN 76-1 Innengewinde (Form C / D)</h2>
       ${table(['P', 'd<sub>g</sub> H13', 'g₁ min C', 'g₂ max C', 'g₁ min D', 'g₂ max D', 'R'], UNDERCUT_INT.map((r) => [fmt(r.p), `d + ${fmt(r.x)}`, fmt(r.c[0]), fmt(r.c[1]), fmt(r.d[0]), fmt(r.d[1]), fmt(r.r)]))}
       <p class="note">Form B und D nur, wenn ein kurzer Freistich nötig ist. Bauteile mit Freistich erreichen nicht die Prüfkräfte nach ISO 898-1.</p></section>`;
     const form = body.querySelector('#fr-form');
@@ -157,7 +159,7 @@ function render(el, params, ctx) {
           ${result('Breite g₁ min', fmt(u.g1), 'mm')}
           ${result('Länge g₂ max', fmt(u.g2), 'mm')}
           ${result('Radius r', fmt(u.r), 'mm')}
-          ${result('Einstichtiefe radial', fmt(Math.abs(u.d - u.dg) / 2, 2), 'mm')}
+          <div class="adv">${result('Einstichtiefe radial', fmt(Math.abs(u.d - u.dg) / 2, 2), 'mm')}</div>
         </div>
         <p class="note">Zeichnungsangabe: „Freistich DIN 76-${esc(u.form)}“. Übergang zum Gewinde mit 30° Fase.</p>`;
     };

@@ -42,10 +42,10 @@ function render(el, params, ctx) {
       </form>
       <section class="card" id="hd-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>Typische Härten</h2>
+    <section class="card adv"><h2>Typische Härten</h2>
       ${table(['Werkstoff / Zustand', 'Härte'], EXAMPLES.map((e) => [esc(e.name), e.value]))}
     </section>
-    <section class="card"><h2>Umwertungstabelle</h2><div id="hd-table"></div>
+    <section class="card adv"><h2>Umwertungstabelle</h2><div id="hd-table"></div>
       <p class="note">HBW über 450 nur mit Hartmetallkugel. Zugfestigkeit aus Härte ist eine Schätzung (Streuung ±10 %), kein Ersatz für den Zugversuch.</p></section>`;
 
   const form = el.querySelector('#hd-form');

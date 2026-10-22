@@ -8,6 +8,9 @@ import { esc, $ } from './core/dom.js';
 import { getSettings, setSetting } from './core/store.js';
 import { getFavorites, isFavorite, toggleFavorite, removeFavorite, getHistory, addHistory, clearHistory } from './core/favorites.js';
 import { collectResults, resultsText, shareLink, renderImage, shareImage, printLabel } from './core/share.js';
+import { enhanceLengthInputs } from './core/inchinput.js';
+import { isInch } from './core/units.js';
+import { LANGS, lang, initI18n, translateDocument, t, decimalSep } from './core/i18n.js';
 
 const view = $('#view');
 const titleEl = $('#title');
@@ -17,6 +20,8 @@ const header = $('#app-header');
 let cleanup = null;
 // Aktuelles Modul und seine Beschriftung (für Favoriten, Verlauf und Teilen)
 let current = null;
+// Module, in denen „Mehr anzeigen“ in dieser Sitzung aufgeklappt wurde
+const expanded = new Set();
 
 function parseHash() {
   const raw = location.hash.replace(/^#/, '') || '/';
@@ -57,7 +62,7 @@ function setChrome({ title, color, back }) {
   titleEl.textContent = title;
   document.documentElement.style.setProperty('--accent', color || 'var(--brand)');
   backBtn.hidden = !back;
-  document.title = title === 'Tabellenbuch' ? 'Tabellenbuch' : `${title} · Tabellenbuch`;
+  document.title = title === 'Tabellenbuch' ? t('Tabellenbuch') : `${t(title)} · ${t('Tabellenbuch')}`;
 }
 
 function shortcut(entry, removable) {
@@ -137,17 +142,54 @@ function renderModule(id, params) {
   const el = document.createElement('div');
   el.className = 'module';
   el.style.setProperty('--accent', mod.color);
+  el.classList.toggle('show-adv', expanded.has(mod.id));
   view.append(el);
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'btn secondary more-btn';
+  more.id = 'more-btn';
+  view.append(more);
+  more.addEventListener('click', () => {
+    const on = !el.classList.contains('show-adv');
+    el.classList.toggle('show-adv', on);
+    if (on) expanded.add(mod.id);
+    else expanded.delete(mod.id);
+    updateMoreButton();
+    if (!on) more.scrollIntoView({ block: 'nearest' });
+  });
   $('#fav-btn').addEventListener('click', () => {
     const on = toggleFavorite({ hash: current.hash, module: mod.id, label: current.label });
     updateFavButton();
     toast(on ? `„${current.label}“ als Favorit gespeichert` : 'Favorit entfernt');
   });
   $('#share-btn').addEventListener('click', () => $('#share').showModal());
-  cleanup = mod.render(el, params, { navigate, setParams }) || null;
+  cleanup = mod.render(el, params, { navigate, setParams, toast }) || null;
   current.hash = location.hash;
   updateFavButton();
+  enhanceView();
 }
+
+/** „Mehr anzeigen“ nur in der einfachen Ansicht und nur, wenn das Modul Erweitertes enthält. */
+function updateMoreButton() {
+  const btn = document.getElementById('more-btn');
+  const el = view.querySelector('.module');
+  if (!btn || !el) return;
+  const has = !!el.querySelector('.adv, details.steps');
+  const open = el.classList.contains('show-adv');
+  // Nur bei Änderung schreiben, sonst löst der MutationObserver endlos aus
+  const hidden = getSettings().expert || !has;
+  const text = open ? 'Weniger anzeigen' : 'Mehr anzeigen: Tabellen, Rechenweg, Sonderfälle';
+  if (btn.hidden !== hidden) btn.hidden = hidden;
+  if (btn.getAttribute('aria-expanded') !== String(open)) btn.setAttribute('aria-expanded', String(open));
+  if (btn.dataset.text !== text) { btn.dataset.text = text; btn.textContent = text; }
+}
+
+// Neue Inhalte der Ansicht nachbearbeiten: Längenfelder (Zoll-Eingabe) und „Mehr anzeigen“
+function enhanceView() {
+  enhanceLengthInputs(view, isInch(), decimalSep());
+  updateMoreButton();
+}
+new MutationObserver(enhanceView).observe(view, { childList: true, subtree: true });
 
 function updateFavButton() {
   const btn = document.getElementById('fav-btn');
@@ -208,6 +250,10 @@ function applySettings() {
   else root.dataset.theme = st.theme;
   if (st.workshop) root.dataset.workshop = '';
   else delete root.dataset.workshop;
+  if (st.expert) delete root.dataset.simple;
+  else root.dataset.simple = '';
+  if (st.steps) root.dataset.stepsOpen = '';
+  else delete root.dataset.stepsOpen;
   const dark = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   $('meta[name="theme-color"]').setAttribute('content', dark ? '#0f1115' : '#ffffff');
   const units = $('#units');
@@ -216,9 +262,10 @@ function applySettings() {
   units.title = st.units === 'inch' ? 'Zoll aktiv – auf Metrisch umschalten' : 'Metrisch aktiv – auf Zoll umschalten';
   const dlg = $('#settings');
   dlg.querySelectorAll('.seg[data-setting] button').forEach((b) => {
-    b.setAttribute('aria-pressed', String(st[b.parentElement.dataset.setting] === b.dataset.value));
+    b.setAttribute('aria-pressed', String(String(st[b.parentElement.dataset.setting]) === b.dataset.value));
   });
   dlg.querySelectorAll('input[data-setting]').forEach((i) => { i.checked = !!st[i.dataset.setting]; });
+  updateMoreButton();
 }
 
 function changeSetting(name, value) {
@@ -226,6 +273,8 @@ function changeSetting(name, value) {
   setSetting(name, value);
   applySettings();
   // Einheiten und Rechenweg wirken auf die Ergebnisse: Ansicht neu aufbauen (Eingaben stehen in der URL)
+  // Neue Sprache: neu laden, damit alle Texte und Zahlen im neuen Format erscheinen
+  if (name === 'lang' && before !== value) { location.reload(); return; }
   if ((name === 'units' || name === 'steps') && before !== value) {
     const y = window.scrollY;
     route();
@@ -236,12 +285,15 @@ function changeSetting(name, value) {
 $('#units').addEventListener('click', () => {
   const next = getSettings().units === 'inch' ? 'metric' : 'inch';
   changeSetting('units', next);
-  toast(next === 'inch' ? 'Ergebnisse in Zoll (metrisch klein darunter)' : 'Ergebnisse metrisch');
+  toast(next === 'inch' ? 'Zoll: Längen in Zoll eingeben, Ergebnisse in Zoll (metrisch klein darunter)' : 'Metrisch: Eingaben und Ergebnisse in mm');
 });
 $('#settings-btn').addEventListener('click', () => $('#settings').showModal());
 $('#settings').addEventListener('click', (e) => {
   const b = e.target.closest('.seg[data-setting] button');
-  if (b) changeSetting(b.parentElement.dataset.setting, b.dataset.value);
+  if (b) {
+    const raw = b.dataset.value;
+    changeSetting(b.parentElement.dataset.setting, raw === 'true' ? true : raw === 'false' ? false : raw);
+  }
   if (e.target === e.currentTarget) e.currentTarget.close();
 });
 $('#settings').addEventListener('change', (e) => {
@@ -253,6 +305,10 @@ $('#clear-history').addEventListener('click', () => {
   if (!current && parseHash().parts.length === 0) renderHome();
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySettings);
+applySettings();
+// Sprachauswahl (Namen der Sprachen bleiben in ihrer eigenen Sprache)
+document.querySelector('.seg[data-setting="lang"]').innerHTML = [['auto', 'Auto'], ...LANGS]
+  .map(([k, l]) => `<button type="button" data-value="${k}" translate="no">${l}</button>`).join('');
 applySettings();
 
 // Rechenweg auf-/zuklappen merkt sich die App für alle Module
@@ -304,4 +360,6 @@ window.addEventListener('online', updateOnline);
 window.addEventListener('offline', updateOnline);
 updateOnline();
 
+await initI18n();
+translateDocument();
 route();

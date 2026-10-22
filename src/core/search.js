@@ -1,8 +1,9 @@
 // Globale Suche über alle Module. Jedes Modul kann eigene Treffer liefern
 // (z. B. erkennt das Gewinde-Modul "M12"); zusätzlich wird über Titel und
-// Schlagworte der Module gesucht.
+// Schlagworte der Module gesucht (auch übersetzt).
 import { MODULES } from './registry.js';
 import { normalize } from './dom.js';
+import { translate } from './i18n.js';
 
 export function searchAll(query, modules = MODULES) {
   const q = String(query ?? '').trim();
@@ -18,7 +19,9 @@ export function searchAll(query, modules = MODULES) {
         console.error(`Suche in ${mod.id} fehlgeschlagen`, err);
       }
     }
-    const words = [mod.title, mod.subtitle, ...(mod.keywords || [])].map(normalize);
+    // Deutsch und, falls eine andere Sprache aktiv ist, die Übersetzung
+    const raw = [mod.title, mod.subtitle, ...(mod.keywords || [])];
+    const words = [...new Set([...raw, ...raw.map((w) => translate(w))])].map(normalize);
     let score = 0;
     for (const w of words) {
       if (w === nq) score = Math.max(score, 60);

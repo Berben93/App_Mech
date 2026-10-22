@@ -4,6 +4,7 @@
 //   Fertigungskosten = T / 60 · Stundensatz
 //   Selbstkosten     = Fertigungskosten + m · (Material + Fremdleistung)
 //   Angebotspreis    = Selbstkosten · (1 + Zuschlag)
+import { numberLocale } from '../../core/i18n.js';
 
 /**
  * @param {object} o  m Losgröße, tr Rüstzeit min, th Hauptzeit min/Stk, tn Nebenzeit min/Stk,
@@ -31,5 +32,5 @@ export function formatDuration(min) {
   if (!Number.isFinite(min)) return '–';
   const h = Math.floor(min / 60);
   const r = Math.round(min - h * 60);
-  return h ? `${h} h ${r} min` : `${(Math.round(min * 10) / 10).toLocaleString('de-DE')} min`;
+  return h ? `${h} h ${r} min` : `${(Math.round(min * 10) / 10).toLocaleString(numberLocale())} min`;
 }

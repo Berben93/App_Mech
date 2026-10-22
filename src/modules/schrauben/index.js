@@ -20,15 +20,15 @@ function render(el, params, ctx) {
         <div class="grid">
           <label class="field"><span>Gewinde</span><select name="g">${options(THREADS, th)}</select></label>
           <label class="field"><span>Festigkeitsklasse</span><select name="k">${options(PROPERTY_CLASSES.map((c) => [c.key, c.note ? `${c.key} (${c.note})` : c.key]), cls)}</select></label>
-          <label class="field"><span>Reibwert µ</span><select name="mu">${options(FRICTION.map((f) => [f.mu, f.label]), mu)}</select></label>
-          <label class="field"><span>Ausnutzung Streckgrenze %</span><input name="nu" inputmode="decimal" value="${esc(params.nu || '90')}"></label>
+          <label class="field adv"><span>Reibwert µ</span><select name="mu">${options(FRICTION.map((f) => [f.mu, f.label]), mu)}</select></label>
+          <label class="field adv"><span>Ausnutzung Streckgrenze %</span><input name="nu" inputmode="decimal" value="${esc(params.nu || '90')}"></label>
         </div>
-        <p class="note">Reibwert gilt für Gewinde und Kopfauflage gleichermaßen (µG = µK).</p>
+        <p class="note adv">Reibwert gilt für Gewinde und Kopfauflage gleichermaßen (µG = µK).</p>
       </form>
       <section class="card" id="tq-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2 id="tq-table-title"></h2><div id="tq-table"></div></section>
-    <section class="card"><h2>Schlüsselweiten (mm)</h2>
+    <section class="card adv"><h2 id="tq-table-title"></h2><div id="tq-table"></div></section>
+    <section class="card adv"><h2>Schlüsselweiten (mm)</h2>
       ${table(['Gewinde', 'Sechskant ISO', 'Sechskant DIN (alt)', 'Innen-6kt ISO 4762', 'Senkkopf ISO 10642', 'Linsenkopf ISO 7380'],
         SCREW_SIZES.map((s) => [`<strong>M${fmt(s.d)}</strong>`, fmt(s.sw), s.swDin ? `<strong>${fmt(s.swDin)}</strong>` : fmt(s.sw), fmt(s.isk), fmt(s.isk10642), fmt(s.isk7380)]))}
       <p class="note">Bei M10, M12, M14 und M22 weichen alte DIN-Schlüsselweiten von ISO ab (fett markiert).</p>
@@ -52,9 +52,11 @@ function render(el, params, ctx) {
         <div class="results">
           ${result('Anziehdrehmoment M<sub>A</sub>', fmt(r.MA, r.MA < 10 ? 1 : 0), 'Nm', true)}
           ${result('Montagevorspannkraft F<sub>M</sub>', fmt(r.FM / 1000, 1), 'kN')}
+          ${s ? result('Schlüsselweite / Innen-6kt', `${fmt(s.sw)} / ${fmt(s.isk)}`, 'mm') : ''}
+          <div class="adv">
           ${result('Spannungsquerschnitt A<sub>s</sub>', fmt(r.As, 1), 'mm²')}
           ${result('Streckgrenze R<sub>p0,2</sub>', fmt(r.rp), 'N/mm²')}
-          ${s ? result('Schlüsselweite / Innen-6kt', `${fmt(s.sw)} / ${fmt(s.isk)}`, 'mm') : ''}
+          </div>
         </div>
         ${steps([
           { title: 'Spannungsquerschnitt', formula: 'A<sub>s</sub> = π/4 · ((d₂ + d₃)/2)²', values: `A<sub>s</sub> = π/4 · ((${fmt(r.d2, 3)} + ${fmt(r.d3, 3)})/2)²`, result: `${fmt(r.As, 1)} mm²` },

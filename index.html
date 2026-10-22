@@ -17,6 +17,7 @@
       var s = JSON.parse(localStorage.getItem('wtb:settings') || '{}');
       if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;
       if (s.workshop) document.documentElement.dataset.workshop = '';
+      if (!s.expert) document.documentElement.dataset.simple = '';
     } catch (e) {}
   </script>
   <link rel="stylesheet" href="src/styles.css">
@@ -43,6 +44,9 @@
   <dialog id="settings" class="sheet" aria-labelledby="settings-title">
     <form method="dialog">
       <h2 id="settings-title">Einstellungen</h2>
+      <fieldset class="opt"><legend>Sprache · Language</legend>
+        <div class="seg" data-setting="lang"></div>
+      </fieldset>
       <fieldset class="opt"><legend>Design</legend>
         <div class="seg" data-setting="theme">
           <button type="button" data-value="auto">Automatisch</button><button type="button" data-value="light">Hell</button><button type="button" data-value="dark">Dunkel</button>
@@ -52,6 +56,12 @@
         <div class="seg" data-setting="units">
           <button type="button" data-value="metric">Metrisch (mm)</button><button type="button" data-value="inch">Zoll (in)</button>
         </div>
+      </fieldset>
+      <fieldset class="opt"><legend>Ansicht der Module</legend>
+        <div class="seg" data-setting="expert">
+          <button type="button" data-value="false">Einfach</button><button type="button" data-value="true">Experte</button>
+        </div>
+        <p class="note opt-note">Einfach: nur die wichtigsten Eingaben und Ergebnisse, der Rest unter „Mehr anzeigen“. Experte: alles sofort sichtbar.</p>
       </fieldset>
       <label class="switch"><input type="checkbox" data-setting="workshop"><span><strong>Werkstattmodus</strong><small>Große Schrift, hoher Kontrast, große Tasten für Handschuhe</small></span></label>
       <label class="switch"><input type="checkbox" data-setting="steps"><span><strong>Rechenweg immer aufklappen</strong><small>Formel und eingesetzte Werte unter jedem Ergebnis</small></span></label>

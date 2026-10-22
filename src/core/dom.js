@@ -2,6 +2,7 @@
 // damit die App ohne Build-Schritt und komplett offline läuft.
 import { isInch, toImperial } from './units.js';
 import { getSettings } from './store.js';
+import { numberLocale } from './i18n.js';
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
@@ -17,14 +18,15 @@ export function $$(selector, root = document) {
   return [...root.querySelectorAll(selector)];
 }
 
-/** Zahl deutsch formatieren. `digits` = feste Nachkommastellen, sonst bis zu `max`. */
+/** Zahl in der Sprache der App formatieren (deutsch: Komma; englisch: Punkt, ohne Tausenderpunkt). */
 export function fmt(value, digits, max = 3) {
   if (value === null || value === undefined || Number.isNaN(value)) return '–';
   if (!Number.isFinite(value)) return '∞';
   const opts = digits === undefined
     ? { maximumFractionDigits: max }
     : { minimumFractionDigits: digits, maximumFractionDigits: digits };
-  return value.toLocaleString('de-DE', opts);
+  const loc = numberLocale();
+  return value.toLocaleString(loc, loc === 'en-US' ? { ...opts, useGrouping: false } : opts);
 }
 
 /** Abmaß mit Vorzeichen, z. B. +0,021 oder −0,007. */

@@ -47,7 +47,7 @@ function render(el, params, ctx) {
         <h2>Kettenglieder</h2>
         <div id="tk-rows"></div>
         <button type="button" class="btn secondary small" id="tk-add" style="margin-top:10px">+ Maß hinzufügen</button>
-        <div class="grid" style="margin-top:14px">
+        <div class="grid adv" style="margin-top:14px">
           <label class="field"><span>Schlussmaß min (optional)</span><input id="tk-min" inputmode="decimal" value="${esc(params.min || '')}"></label>
           <label class="field"><span>Schlussmaß max (optional)</span><input id="tk-max" inputmode="decimal" value="${esc(params.max || '')}"></label>
         </div>
@@ -95,6 +95,7 @@ function render(el, params, ctx) {
         ${result('Höchst- / Mindestmaß', `${fmt(c.arith.max, 3)} / ${fmt(c.arith.min, 3)}`, 'mm')}
         ${result('Toleranz T₀', fmt(c.arith.T, 3), 'mm')}
       </div>
+      <div class="adv">
       <h3 class="sub">Statistisch (quadratisch)${check(c.stat.min, c.stat.max)}</h3>
       <div class="results">
         ${result('Abmaße', `${fmtSigned(c.stat.ES)} / ${fmtSigned(c.stat.EI)}`, 'mm')}
@@ -102,6 +103,7 @@ function render(el, params, ctx) {
         ${result('Toleranz T<sub>s</sub>', fmt(c.stat.T, 3), 'mm')}
       </div>
       ${table(['Nr.', 'Richtung', 'Nennmaß', 'Abmaße', 'T'], links.map((l) => [String(l.i), l.dir > 0 ? '+' : '−', fmt(l.n, 3), `${fmtSigned(l.es)} / ${fmtSigned(l.ei)}${l.iso ? ` (${esc(l.iso)})` : ''}`, fmt(l.es - l.ei, 3)]))}
+      </div>
       ${steps([
         { title: 'Nennmaß', formula: 'N₀ = Σ N<sub>+</sub> − Σ N<sub>−</sub>', values: `N₀ = ${links.map((l) => `${l.dir > 0 ? '+' : '−'} ${fmt(l.n, 3)}`).join(' ').replace(/^\+ /, '')}`, result: `${fmt(c.N, 3)} mm` },
         { title: 'Oberes Abmaß (arithmetisch)', formula: 'ES₀ = Σ ES<sub>+</sub> − Σ EI<sub>−</sub>', values: `ES₀ = ${links.map((l) => (l.dir > 0 ? `+ (${fmtSigned(l.es)})` : `− (${fmtSigned(l.ei)})`)).join(' ').replace(/^\+ /, '')}`, result: `${fmtSigned(c.arith.ES)} mm` },
@@ -109,7 +111,7 @@ function render(el, params, ctx) {
         { title: 'Statistische Toleranz', formula: 'T<sub>s</sub> = √(Σ T<sub>i</sub>²)', values: `T<sub>s</sub> = √(${links.map((l) => `${fmt(l.es - l.ei, 3)}²`).join(' + ')})`, result: `${fmt(c.stat.T, 3)} mm` },
         { title: 'Lage der Toleranzmitte', formula: 'C₀ = Σ ± (ES<sub>i</sub> + EI<sub>i</sub>)/2', values: `Abmaße = C₀ ± T<sub>s</sub>/2 = ${fmtSigned(c.stat.C)} ± ${fmt(c.stat.T / 2, 4)}`, result: `${fmtSigned(c.stat.ES)} / ${fmtSigned(c.stat.EI)} mm` },
       ])}
-      <p class="note">Statistisch gilt bei vielen, unabhängig gefertigten Maßen mit normalverteilten Istmaßen (≈ 99,73 % innerhalb). Bei wenigen Gliedern oder Einzelfertigung arithmetisch rechnen.</p>`;
+      <p class="note adv">Statistisch gilt bei vielen, unabhängig gefertigten Maßen mit normalverteilten Istmaßen (≈ 99,73 % innerhalb). Bei wenigen Gliedern oder Einzelfertigung arithmetisch rechnen.</p>`;
   }
 
   list.addEventListener('input', (e) => {

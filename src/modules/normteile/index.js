@@ -4,7 +4,7 @@ import { keyFor, ringFor, pinFor, washerFor, oringGroove } from './calc.js';
 
 const TABS = [['oring', 'O-Ringe'], ['passfeder', 'Passfedern'], ['ring', 'Sicherungsringe'], ['stift', 'Zylinderstifte'], ['scheibe', 'Scheiben']];
 
-const field = (name, label, value, attrs = 'inputmode="decimal"') => `<label class="field"><span>${label}</span><input name="${name}" ${attrs} value="${esc(value)}"></label>`;
+const field = (name, label, value, attrs = 'inputmode="decimal"', cls = '') => `<label class="field${cls ? ` ${cls}` : ''}"><span>${label}</span><input name="${name}" ${attrs} value="${esc(value)}"></label>`;
 
 /** Querschnitt einer O-Ring-Nut mit eingelegtem, verpresstem Ring. */
 function oringGraphic(g, d2) {
@@ -51,14 +51,14 @@ function render(el, params, ctx) {
             <label class="field"><span>Bewegung</span><select name="b">${options([['stat', 'statisch'], ['dyn', 'dynamisch']], params.b || 'stat')}</select></label>
             ${field('s', 'Schnurstärke d₂ (mm)', params.s || '2.5', 'inputmode="decimal" list="nt-s"')}
             ${field('D', 'Bohrung bzw. Stange Ø (mm)', params.D || '40')}
-            ${field('i', 'O-Ring Innen-Ø d₁ (mm)', params.i || '', 'inputmode="decimal" placeholder="optional"')}
+            ${field('i', 'O-Ring Innen-Ø d₁ (mm)', params.i || '', 'inputmode="decimal" placeholder="optional"', 'adv')}
           </div>
           <datalist id="nt-s">${ORING_SECTIONS.map((s) => `<option value="${s}">`).join('')}</datalist>
           <p class="note">Kolben: Ø der Bohrung eingeben, Nut sitzt im Kolben. Stange: Ø der Stange eingeben, Nut sitzt in der Bohrung. Bei axialem Einbau ist der Ø ohne Bedeutung.</p>
         </form>
         <section class="card" id="nt-out" aria-live="polite"></section>
       </div>
-      <section class="card"><h2>Nutmaße je Schnurstärke (Richtwerte)</h2><div id="nt-table"></div>
+      <section class="card adv"><h2>Nutmaße je Schnurstärke (Richtwerte)</h2><div id="nt-table"></div>
         <p class="note">Verpressung radial statisch ≈ 20 %, dynamisch ≈ 12 %, axial ≈ 25 %; Nutfüllung unter 85 %. Kanten gratfrei mit Fase 15–20° anfahren. Für Drücke über 100 bar Stützringe vorsehen. Herstellerangaben haben Vorrang.</p></section>`;
       bind(() => {
         const v = formValues(body.querySelector('form'));
@@ -74,10 +74,12 @@ function render(el, params, ctx) {
             ${result('Nuttiefe t', fmt(g.depth, 2), 'mm', true)}
             ${result('Nutbreite b', fmt(g.width, 1), 'mm')}
             ${g.grooveDia ? result(v.e === 'kolben' ? 'Nutgrund-Ø im Kolben' : 'Nut-Ø in der Bohrung', fmt(g.grooveDia, 2), 'mm') : ''}
+            <div class="adv">
             ${g.ringId ? result('Passender O-Ring Innen-Ø', `≈ ${fmt(v.e === 'kolben' ? g.ringId * 0.97 : g.ringId, 1)}`, 'mm') : ''}
             ${result('Verpressung', fmt(g.squeeze * 100, 0), '%')}
             ${result('Nutfüllung', fmt(g.fill * 100, 0), '%')}
             ${g.stretch !== undefined ? result(g.stretch >= 0 ? 'Dehnung Innen-Ø' : 'Stauchung Innen-Ø', fmt(Math.abs(g.stretch) * 100, 1), '%') : ''}
+            </div>
           </div>
           ${g.stretch !== undefined && (g.stretch > 0.06 || g.stretch < -0.03) ? '<p class="note warn-text">Dehnung über 6 % bzw. Stauchung über 3 % vermeiden: anderen Innen-Ø wählen.</p>' : ''}
           ${steps([
@@ -104,7 +106,7 @@ function render(el, params, ctx) {
         </form>
         <section class="card" id="nt-out" aria-live="polite"></section>
       </div>
-      <section class="card"><h2>Passfedern DIN 6885-1</h2>
+      <section class="card adv"><h2>Passfedern DIN 6885-1</h2>
         ${table(['Welle über … bis', 'b × h', 'Welle t₁', 'Nabe t₂'], KEYS.map((k) => ({ cells: [`${k.from} … ${k.to}`, `<strong>${k.b} × ${k.h}</strong>`, fmt(k.t1), fmt(k.t2)] })))}
         <p class="note">Längen: ${KEY_LENGTHS.join(', ')} mm.</p></section>`;
       bind(() => {
@@ -118,9 +120,11 @@ function render(el, params, ctx) {
             ${result('Breite × Höhe', `${k.b} × ${k.h}`, 'mm', true)}
             ${result('Wellennuttiefe t₁', fmt(k.t1), 'mm')}
             ${result('Nabennuttiefe t₂', fmt(k.t2), 'mm')}
+            <div class="adv">
             ${result('Maß Wellennutgrund d − t₁', fmt(k.shaftGroove, 1), 'mm')}
             ${result('Maß Nabennutgrund d + t₂', fmt(k.hubGroove, 1), 'mm')}
             ${result('Nutbreite Welle / Nabe', `${k.b} P9 bzw. N9 / ${k.b} P9 bzw. JS9`)}
+            </div>
           </div>
           <p class="note">Bezeichnung z. B. „Passfeder DIN 6885 – A ${k.b} × ${k.h} × 40“. Tragende Länge bei Form A = l − b.</p>`
           : '<h2>Ergebnis</h2><p class="warn-text">Wellen-Ø zwischen 6 und 230 mm eingeben.</p>';
@@ -137,7 +141,7 @@ function render(el, params, ctx) {
         </form>
         <section class="card" id="nt-out" aria-live="polite"></section>
       </div>
-      <div class="grid-2">
+      <div class="grid-2 adv">
         <section class="card"><h2>DIN 471 (Welle)</h2>${table(['d₁', 's', 'Nut-Ø d₂', 'm H13'], RINGS_SHAFT.map((r) => [`<strong>${fmt(r.d1)}</strong>`, fmt(r.s), fmt(r.d2), fmt(r.m)]))}</section>
         <section class="card"><h2>DIN 472 (Bohrung)</h2>${table(['d₁', 's', 'Nut-Ø d₂', 'm H13'], RINGS_BORE.map((r) => [`<strong>${fmt(r.d1)}</strong>`, fmt(r.s), fmt(r.d2), fmt(r.m)]))}</section>
       </div>`;
@@ -151,7 +155,7 @@ function render(el, params, ctx) {
             ${result('Nut-Ø d₂', fmt(r.d2), 'mm', true)}
             ${result('Nutbreite m (H13)', fmt(r.m), 'mm')}
             ${result('Ringdicke s', fmt(r.s), 'mm')}
-            ${result('Nuttiefe radial', fmt(Math.abs(r.d2 - r.d1) / 2, 2), 'mm')}
+            <div class="adv">${result('Nuttiefe radial', fmt(Math.abs(r.d2 - r.d1) / 2, 2), 'mm')}</div>
           </div>
           <p class="note">Abstand Nut zur Wellen- bzw. Bohrungskante mindestens 3 × Nuttiefe. Toleranz Nut-Ø: Welle h11 bis h12, Bohrung H11 bis H12.</p>`
           : '<h2>Ergebnis</h2><p class="warn-text">Diesen Durchmesser enthält die Tabelle nicht.</p>';
@@ -168,7 +172,7 @@ function render(el, params, ctx) {
         </form>
         <section class="card" id="nt-out" aria-live="polite"></section>
       </div>
-      <section class="card"><h2>Zylinderstifte ISO 2338 / ISO 8734</h2>
+      <section class="card adv"><h2>Zylinderstifte ISO 2338 / ISO 8734</h2>
         ${table(['d', 'Fase c ≈', 'l von', 'l bis'], PINS.map((p) => [`<strong>${fmt(p.d)}</strong>`, fmt(p.c), fmt(p.l[0]), fmt(p.l[1])]))}
         <p class="note">Längen: ${PIN_LENGTHS.join(', ')} mm. ISO 2338 ungehärtet m6 oder h8; ISO 8734 gehärtet m6. Mindesteinstecktiefe je Bauteil ≈ 1,5 × d.</p></section>`;
       bind(() => {
@@ -182,9 +186,11 @@ function render(el, params, ctx) {
           <div class="results">
             ${result('Aufnahmebohrung (Passung)', `${fmt(d)} H7`, '', true)}
             ${result('Passung mit Stift m6', `${fmt(d)} H7/m6 (Übergang, eingepresst)`)}
-            ${result('Fase c ≈', fmt(p.c), 'mm')}
             ${result('Längen lieferbar', `${fmt(p.l[0])} … ${fmt(p.l[1])}`, 'mm')}
+            <div class="adv">
+            ${result('Fase c ≈', fmt(p.c), 'mm')}
             ${result('Mindesteinstecktiefe ≈', fmt(1.5 * d, 1), 'mm')}
+            </div>
           </div>
           ${inRange ? '' : '<p class="note warn-text">Länge liegt außerhalb des genormten Bereichs.</p>'}
           ${PIN_LENGTHS.includes(l) || !inRange ? '' : `<p class="note">Nächste Normlänge: ${PIN_LENGTHS.find((x) => x >= l)} mm.</p>`}`;
@@ -198,7 +204,7 @@ function render(el, params, ctx) {
         </form>
         <section class="card" id="nt-out" aria-live="polite"></section>
       </div>
-      <section class="card"><h2>Flache Scheiben</h2>
+      <section class="card adv"><h2>Flache Scheiben</h2>
         ${table(['Schraube', 'd₁', 'd₂ ISO 7089', 'h', 'd₂ ISO 7093', 'h'], WASHERS.map((w) => [`<strong>M${fmt(w.d)}</strong>`, fmt(w.n.d1), fmt(w.n.d2), fmt(w.n.h), w.l ? fmt(w.l.d2) : '–', w.l ? fmt(w.l.h) : '–']))}
         <p class="note">ISO 7089 entspricht DIN 125-A (ISO 7090 mit Fase). ISO 7093 ist die große Reihe (früher DIN 9021). Härteklasse 200 HV bis 8.8, 300 HV für 10.9.</p></section>`;
       bind(() => {

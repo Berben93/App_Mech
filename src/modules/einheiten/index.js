@@ -31,7 +31,7 @@ function render(el, params, ctx) {
         </div>
         <div class="results" id="un-out" aria-live="polite" style="margin-top:10px"></div>
       </form>
-      <section class="card"><h2>Zollbrüche in mm</h2><div id="frac"></div></section>
+      <section class="card adv"><h2>Zollbrüche in mm</h2><div id="frac"></div></section>
     </div>`;
 
   const form = el.querySelector('#un-form');

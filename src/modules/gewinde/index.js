@@ -55,7 +55,7 @@ function profileGraphic(t) {
     x += pitchPx;
   }
   d += ` L ${x} ${H - 10} L 10 ${H - 10} Z`;
-  return `<svg class="graphic" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gewindeprofil ${angle} Grad">
+  return `<svg class="graphic adv" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gewindeprofil ${angle} Grad">
     <defs><clipPath id="clip-prof"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath></defs>
     <path class="profile" d="${d}" clip-path="url(#clip-prof)"/>
     <line class="axis" x1="${10 + flat / 2 + flankDx + flat / 2}" x2="${10 + flat / 2 + flankDx + flat / 2 + pitchPx}" y1="${top - 12}" y2="${top - 12}"/>
@@ -69,6 +69,8 @@ function details(t) {
   rows.push(result('Steigung P', fmt(t.p, undefined, 3), 'mm'));
   if (t.tpi) rows.push(result('Gänge je Zoll', fmt(t.tpi), 'tpi'));
   rows.push(result('Außendurchmesser d', fmt(t.d, undefined, 3), 'mm'));
+  if (t.clearance) rows.push(result('Durchgangsbohrung f/m/g', t.clearance.map((v) => fmt(v)).join(' / '), 'mm'));
+  rows.push('<div class="adv">');
   if (t.dIn) rows.push(result('Außendurchmesser', fmt(t.dIn, undefined, 4), 'Zoll'));
   rows.push(result('Flankendurchmesser d₂', fmt(t.d2, undefined, 3), 'mm'));
   if (t.d3) rows.push(result('Kerndurchmesser Bolzen d₃', fmt(t.d3, undefined, 3), 'mm'));
@@ -76,7 +78,7 @@ function details(t) {
   if (t.h3) rows.push(result('Gewindetiefe h₃', fmt(t.h3, undefined, 3), 'mm'));
   if (t.h) rows.push(result('Gewindetiefe h', fmt(t.h, undefined, 3), 'mm'));
   if (t.D4) rows.push(result('Außendurchmesser Mutter D₄', fmt(t.D4, undefined, 3), 'mm'));
-  if (t.clearance) rows.push(result('Durchgangsbohrung f/m/g', t.clearance.map((v) => fmt(v)).join(' / '), 'mm'));
+  rows.push('</div>');
   const notes = {
     M: 'Kernloch nach DIN 336 (entspricht meist d − P).',
     MF: 'Kernloch = d − P (Faustformel für ca. 6H).',

@@ -1,6 +1,6 @@
 {
   "name": "werkstatt-tabellenbuch",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Offline-fähiges Tabellenbuch für die Zerspanung als installierbare Web-App (PWA)",
   "type": "module",

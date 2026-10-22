@@ -21,14 +21,16 @@ function card(m) {
       ${result('Kurzname (EN)', esc(m.name))}
       ${result('Alte Bezeichnung', esc(m.old))}
       ${result('AISI / ASTM / UNS', esc(m.aisi))}
-      ${result('Zustand', esc(m.state))}
       ${result('Zugfestigkeit R<sub>m</sub>', esc(m.rm), 'N/mm²')}
-      ${result('Streckgrenze R<sub>e</sub> / R<sub>p0,2</sub>', esc(m.re), m.re === '–' ? '' : 'N/mm²')}
-      ${result('Härte', esc(m.hb))}
       ${result('Zerspanbarkeit', `${stars(m.mach)} ${MACH_LABEL[m.mach]}`)}
       ${result('Schweißeignung', `<span class="pill ${WELD_CLASS[m.weld]}">${m.weld}</span>`)}
+      <div class="adv">
+      ${result('Zustand', esc(m.state))}
+      ${result('Streckgrenze R<sub>e</sub> / R<sub>p0,2</sub>', esc(m.re), m.re === '–' ? '' : 'N/mm²')}
+      ${result('Härte', esc(m.hb))}
       ${result('Dichte', fmt(m.rho, 2), 'g/cm³')}
       ${result('ISO-Gruppe', `${isoPill(m.iso)} ${esc(ISO_GROUPS[m.iso].name)}`)}
+      </div>
     </div>
     <p class="note">${esc(m.use)}</p>`;
 }
@@ -52,7 +54,7 @@ function render(el, params, ctx) {
         <div id="ws-table"></div>
       </section>
     </div>
-    <section class="card"><h2>Legende</h2>
+    <section class="card adv"><h2>Legende</h2>
       <p class="note" style="margin-top:0">Zerspanbarkeit: ●●●●● sehr gut (Automatenstahl, Messing) bis ●○○○○ schlecht (Nickelbasis, Titan, zähe austenitische Stähle).
       Schweißeignung „bedingt“: Vorwärmen, geeignete Zusatzwerkstoffe oder Wärmenachbehandlung nötig. „schlecht“: Schwefel/Blei, hoher Kohlenstoff oder Aushärtung.
       Festigkeiten sind Normwerte für den genannten Zustand und Abmessungsbereich; für Abnahmen gilt das Werkszeugnis.</p></section>`;
