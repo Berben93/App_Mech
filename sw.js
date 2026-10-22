@@ -1,7 +1,7 @@
 // Service Worker: hält alle Dateien der App im Cache, damit sie ohne Netz läuft.
 // Bei jeder Änderung an der App VERSION erhöhen (gleich der Version in package.json),
 // sonst bekommen installierte Apps die neuen Dateien nicht.
-const VERSION = '0.3.0';
+const VERSION = '0.3.1';
 const CACHE = `tabellenbuch-${VERSION}`;
 
 const FILES = [
@@ -44,8 +44,6 @@ const FILES = [
   './src/modules/gewinde/calc.js',
   './src/modules/gewinde/data.js',
   './src/modules/gewinde/index.js',
-  './src/modules/gewindefraesen/calc.js',
-  './src/modules/gewindefraesen/index.js',
   './src/modules/haerte/calc.js',
   './src/modules/haerte/data.js',
   './src/modules/haerte/index.js',

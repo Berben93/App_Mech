@@ -29,7 +29,6 @@ Läuft offline, ohne Werbung und ohne Konto. Alle Daten bleiben auf dem Gerät.
 | Fertigungszeit & Kosten | Zeit je Einheit, Auftragszeit, Fertigungs- und Selbstkosten, Angebotspreis, Preisstaffel nach Losgröße |
 | Toleranzketten | Schlussmaß arithmetisch und statistisch, Toleranzen als ±, Abmaße oder ISO-Kurzzeichen (z. B. h7) |
 | Form & Lage | Alle 14 Symbole nach ISO 1101 mit Toleranzzone, Erklärung und Prüfhinweis, Zusatzzeichen, Positionsprüfung mit MMR |
-| Gewindefräsen | Drehzahl, Vorschub an Kontur und Fräsermitte, Bahnradius, Umläufe, Beispielprogramm G02/G03 |
 
 Bedienung: Favoriten (☆ im Modul) und Verlauf auf der Startseite, Werkstattmodus (große Schrift, hoher Kontrast,
 große Tasten), globaler Zoll/Metrisch-Schalter (Ergebnisse in Zoll, metrischer Wert klein darunter),
