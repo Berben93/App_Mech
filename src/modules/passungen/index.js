@@ -85,11 +85,11 @@ function render(el, params, ctx) {
       </form>
       <section class="card" id="fit-out" aria-live="polite"></section>
     </div>
-    <section class="card">
+    <section class="card adv">
       <h2>Häufige Passungen und Anwendung</h2>
       ${table(['Passung', 'Typische Anwendung'], COMMON_FITS.map((c) => ({ cells: [`<strong>${c.fit}</strong>`, esc(c.use)] })))}
     </section>
-    <section class="card">
+    <section class="card adv">
       <h2>Grundtoleranzen IT (µm)</h2>
       <div id="it-table"></div>
     </section>`;

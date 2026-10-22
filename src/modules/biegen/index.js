@@ -47,13 +47,13 @@ function render(el, params, ctx) {
           <label class="field"><span>Öffnungswinkel β (°)</span><input name="w" inputmode="decimal" value="${p('w', '90')}"></label>
           <label class="field"><span>Schenkel a außen (mm)</span><input name="a" inputmode="decimal" value="${p('a', '50')}"></label>
           <label class="field"><span>Schenkel b außen (mm)</span><input name="b" inputmode="decimal" value="${p('b', '30')}"></label>
-          <label class="field"><span>Biegelänge l (mm)</span><input name="l" inputmode="decimal" value="${p('l', '1000')}"></label>
+          <label class="field adv"><span>Biegelänge l (mm)</span><input name="l" inputmode="decimal" value="${p('l', '1000')}"></label>
         </div>
         <p class="note">β ist der Winkel zwischen den Schenkeln (90° = rechtwinklig). Schenkel a und b als Außenmaße bis zum Schnittpunkt der Außenkanten.</p>
       </form>
       <section class="card" id="bg-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>Kleinste Biegeradien Stahl (DIN 6935)</h2><div id="bg-table"></div>
+    <section class="card adv"><h2>Kleinste Biegeradien Stahl (DIN 6935)</h2><div id="bg-table"></div>
       <p class="note">Richtwerte für Biegen quer zur Walzrichtung. Längs zur Walzrichtung etwa eine Stufe größer wählen. Edelstahl ≈ 1·s, Aluminium je nach Zustand 0,5 bis 3·s.</p></section>`;
 
   const form = el.querySelector('#bg-form');
@@ -88,13 +88,15 @@ function render(el, params, ctx) {
       <div class="results">
         ${result('Gestreckte Länge L', fmt(res.L, 2), 'mm', true)}
         ${result('Ausgleichswert v', fmt(res.v, 2), 'mm')}
+        ${rmin !== null ? result('Kleinster Biegeradius', fmt(rmin, 1), 'mm') : result('Kleinster Biegeradius', 'außerhalb Tabelle')}
+        <div class="adv">
         ${result('Biegeverkürzung', fmt(-res.v, 2), 'mm')}
         ${result('Korrekturfaktor k (DIN 6935)', fmt(res.k, 3))}
         ${result('K-Faktor (CAD, = k/2)', fmt(res.K, 3))}
         ${result('Biegewinkel α = 180° − β', fmt(alpha, 1), '°')}
-        ${rmin !== null ? result('Kleinster Biegeradius', fmt(rmin, 1), 'mm') : result('Kleinster Biegeradius', 'außerhalb Tabelle')}
         ${result('Gesenkweite V (Richtwert)', fmt(V), 'mm')}
         ${Number.isFinite(F) ? result(`Presskraft für ${fmt(l)} mm`, `${fmt(F, 0)} kN ≈ ${fmt(F / 9.81, 1)} t`) : ''}
+        </div>
       </div>
       ${rmin !== null && r < rmin ? `<p class="note warn-text">Innenradius ${fmt(r)} mm ist kleiner als der empfohlene Mindestradius ${fmt(rmin)} mm: Rissgefahr an der Außenseite.</p>` : ''}
       ${steps([
@@ -107,7 +109,7 @@ function render(el, params, ctx) {
         { title: 'Gestreckte Länge', formula: 'L = a + b + v', values: `L = ${fmt(a)} + ${fmt(b)} + (${fmt(res.v, 2)})`, result: `${fmt(res.L, 2)} mm` },
         Number.isFinite(F) ? { title: 'Presskraft (Freibiegen)', formula: 'F = 1,42 · R<sub>m</sub> · s² · l / (1000 · V)', values: `F = 1,42 · ${fmt(rm)} · ${fmt(s)}² · ${fmt(l)} / (1000 · ${fmt(V)})`, result: `${fmt(F, 0)} kN` } : null,
       ])}
-      <p class="note">Mehrere Biegungen: alle Außenmaße addieren und je Biegestelle einen Ausgleichswert v dazurechnen. Presskraft mit typischem R<sub>m</sub> ≈ ${fmt(rm)} N/mm².</p>`;
+      <p class="note adv">Mehrere Biegungen: alle Außenmaße addieren und je Biegestelle einen Ausgleichswert v dazurechnen. Presskraft mit typischem R<sub>m</sub> ≈ ${fmt(rm)} N/mm².</p>`;
   }
 
   form.addEventListener('input', update);

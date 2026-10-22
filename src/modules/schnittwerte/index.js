@@ -2,11 +2,11 @@ import { esc, fmt, num, options, result, table, steps } from '../../core/dom.js'
 import { MATERIALS, PROCESSES, TOOLS, ISO_GROUPS } from './data.js';
 import { turning, milling, drilling, drillFeed, rpm } from './calc.js';
 
-// Felder je Verfahren: [Name, Beschriftung, Standardwert]
+// Felder je Verfahren: [Name, Beschriftung, Standardwert, erweitert]
 const FIELDS = {
-  turn: [['d', 'Durchmesser d (mm)', '50'], ['vc', 'vc (m/min)', ''], ['f', 'Vorschub f (mm/U)', ''], ['ap', 'Schnitttiefe ap (mm)', '2'], ['L', 'Weg L (mm)', '100']],
-  mill: [['D', 'Fräser-Ø D (mm)', '16'], ['z', 'Schneiden z', '4'], ['vc', 'vc (m/min)', ''], ['fz', 'Zahnvorschub fz (mm)', ''], ['ap', 'Schnitttiefe ap (mm)', '8'], ['ae', 'Eingriffsbreite ae (mm)', '4'], ['L', 'Weg L (mm)', '200']],
-  drill: [['D', 'Bohrer-Ø D (mm)', '10'], ['vc', 'vc (m/min)', ''], ['f', 'Vorschub f (mm/U)', ''], ['L', 'Bohrtiefe L (mm)', '30']],
+  turn: [['d', 'Durchmesser d (mm)', '50'], ['vc', 'vc (m/min)', ''], ['f', 'Vorschub f (mm/U)', ''], ['ap', 'Schnitttiefe ap (mm)', '2', true], ['L', 'Weg L (mm)', '100', true]],
+  mill: [['D', 'Fräser-Ø D (mm)', '16'], ['z', 'Schneiden z', '4'], ['vc', 'vc (m/min)', ''], ['fz', 'Zahnvorschub fz (mm)', ''], ['ap', 'Schnitttiefe ap (mm)', '8', true], ['ae', 'Eingriffsbreite ae (mm)', '4', true], ['L', 'Weg L (mm)', '200', true]],
+  drill: [['D', 'Bohrer-Ø D (mm)', '10'], ['vc', 'vc (m/min)', ''], ['f', 'Vorschub f (mm/U)', ''], ['L', 'Bohrtiefe L (mm)', '30', true]],
 };
 
 const mean = ([a, b]) => Math.round((a + b) / 2);
@@ -55,7 +55,7 @@ function render(el, params, ctx) {
       </form>
       <section class="card" id="sw-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>Richtwerte vc (m/min)</h2><div id="sw-table"></div>
+    <section class="card adv"><h2>Richtwerte vc (m/min)</h2><div id="sw-table"></div>
       <p class="note">Richtwerte für beschichtetes Hartmetall bzw. HSS-E bei stabilen Bedingungen. Angaben des Werkzeugherstellers haben Vorrang.</p></section>`;
 
   const form = el.querySelector('#sw-form');
@@ -73,9 +73,9 @@ function render(el, params, ctx) {
   }
 
   function buildFields() {
-    el.querySelector('#sw-fields').innerHTML = FIELDS[proc].map(([name, label, def]) => {
+    el.querySelector('#sw-fields').innerHTML = FIELDS[proc].map(([name, label, def, adv]) => {
       if (values[name] === undefined || values[name] === '') values[name] = def;
-      return `<label class="field"><span>${label}</span><input name="${name}" inputmode="decimal" value="${esc(values[name])}"></label>`;
+      return `<label class="field${adv ? ' adv' : ''}"><span>${label}</span><input name="${name}" inputmode="decimal" value="${esc(values[name])}"></label>`;
     }).join('');
     el.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === proc)));
   }
@@ -105,15 +105,25 @@ function render(el, params, ctx) {
         <div class="results">
           ${result('Drehzahl n', fmt(Math.round(c.n)), '1/min', true)}
           ${result('Vorschubgeschwindigkeit v<sub>f</sub>', fmt(Math.round(c.vf)), 'mm/min')}
+          <div class="adv">
           ${result('Zeitspanvolumen Q', fmt(c.Q, 1), 'cm³/min')}
           ${result('Schnittleistung P<sub>c</sub> (ca.)', fmt(c.Pc, 2), 'kW')}
           ${Number.isFinite(minutes) ? result('Hauptzeit t<sub>h</sub>', `${fmt(minutes, 2)} min = ${fmt(minutes * 60, 0)} s`) : ''}
+          </div>
         </div>
-        <p class="note">${proc === 'turn' ? 'Drehen: n = vc·1000/(π·d), v<sub>f</sub> = n·f, Q = vc·ap·f.' : proc === 'mill' ? 'Fräsen: n = vc·1000/(π·D), v<sub>f</sub> = n·z·f<sub>z</sub>, Q = ap·ae·v<sub>f</sub>/1000.' : 'Bohren: n = vc·1000/(π·D), v<sub>f</sub> = n·f.'}
+        <p class="note adv">${proc === 'turn' ? 'Drehen: n = vc·1000/(π·d), v<sub>f</sub> = n·f, Q = vc·ap·f.' : proc === 'mill' ? 'Fräsen: n = vc·1000/(π·D), v<sub>f</sub> = n·z·f<sub>z</sub>, Q = ap·ae·v<sub>f</sub>/1000.' : 'Bohren: n = vc·1000/(π·D), v<sub>f</sub> = n·f.'}
         Leistung mit k<sub>c</sub> ≈ ${fmt(mat.kc)} N/mm², ohne Maschinenwirkungsgrad.</p>
-        ${steps(cuttingSteps(proc, values, c, mat.kc))}`;
+        ${steps(cuttingSteps(proc, values, c, mat.kc))}
+        <div class="chips" style="margin-top:12px"><a class="chip" href="${saveLink()}">★ In „Meine Schnittdaten“ speichern</a></div>`;
     }
     renderTable();
+  }
+
+  /** Link ins Modul Meine Schnittdaten, Formular mit dieser Rechnung vorbelegt. */
+  function saveLink() {
+    const p = { neu: 1, v: proc, w: mat.id, ...Object.fromEntries(FIELDS[proc].map(([n]) => [n, values[n]])) };
+    delete p.L;
+    return `#/m/schnittdaten?${new URLSearchParams(Object.entries(p).filter(([, x]) => x !== '' && x !== undefined)).toString()}`;
   }
 
   function renderTable() {

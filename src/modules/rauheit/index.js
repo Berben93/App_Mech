@@ -41,11 +41,11 @@ function render(el, params, ctx) {
         </div>
         <datalist id="radii">${RADII.map((r) => `<option value="${r}">`).join('')}</datalist>
         <div class="results" id="ra-out" aria-live="polite" style="margin-top:10px"></div>
-        <p class="note">R<sub>th</sub> = f²/(8·r) ≈ Rz; Ra ≈ f²/(31,2·r). In der Praxis liegt die Rauheit wegen Verschleiß und Schwingungen etwas höher.</p>
+        <p class="note adv">R<sub>th</sub> = f²/(8·r) ≈ Rz; Ra ≈ f²/(31,2·r). In der Praxis liegt die Rauheit wegen Verschleiß und Schwingungen etwas höher.</p>
       </form>
-      <section class="card"><h2>Erreichbare Rauheit Ra (µm)</h2><div id="ra-chart"></div></section>
+      <section class="card adv"><h2>Erreichbare Rauheit Ra (µm)</h2><div id="ra-chart"></div></section>
     </div>
-    <section class="card"><h2>Rauheitsklassen ISO 1302</h2><div id="ra-table"></div>
+    <section class="card adv"><h2>Rauheitsklassen ISO 1302</h2><div id="ra-table"></div>
       <p class="note">Rz lässt sich nicht exakt aus Ra umrechnen. Als grober Anhalt gilt Rz ≈ 4 bis 7 × Ra.</p></section>`;
 
   const form = el.querySelector('#ra-form');
@@ -64,7 +64,7 @@ function render(el, params, ctx) {
          ${result('R<sub>th</sub> (≈ Rz)', fmt(th.Rth, 2), 'µm')}
          ${result('Klasse', cls ? `${cls.n} (Ra ${fmt(cls.ra)})` : '–')}
          ${fmax ? result(`Max. Vorschub für Ra ${fmt(ra)}`, fmt(fmax, 3), 'mm/U') : ''}
-         ${fmax ? result(`Max. Vorschub für Rz ${fmt(ra * 6)} (≈ 6·Ra)`, fmt(maxFeedForRz(ra * 6, r), 3), 'mm/U') : ''}
+         ${fmax ? `<div class="adv">${result(`Max. Vorschub für Rz ${fmt(ra * 6)} (≈ 6·Ra)`, fmt(maxFeedForRz(ra * 6, r), 3), 'mm/U')}</div>` : ''}
          ${steps([
            { title: 'Theoretische Rautiefe', formula: 'R<sub>th</sub> = f² / (8·r) · 1000', values: `R<sub>th</sub> = ${fmt(f)}² / (8·${fmt(r)}) · 1000`, result: `${fmt(th.Rth, 2)} µm` },
            { title: 'Mittenrauwert', formula: 'Ra ≈ f² / (31,2·r) · 1000', values: `Ra ≈ ${fmt(f)}² / (31,2·${fmt(r)}) · 1000`, result: `${fmt(th.Ra, 2)} µm` },

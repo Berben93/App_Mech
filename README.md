@@ -40,6 +40,19 @@ Dazu: globale Suche (z. B. `M12`, `25 H7/g6`, `Ra 1,6`, `1.4301`, `G1/2`, `1/2 z
 `45 HRC`, `4140`, `MK 3`, `DIN 471 20`, `Passfeder 30`, `Freistich M12`, `O-Ring 20x2`, `Ebenheit`),
 heller/dunkler/automatischer Modus, teilbare Links (alle Eingaben stehen in der URL).
 
+## Phase 3: Werkstatt-Alltag
+
+- **Einfach / Experte** (Einstellungen): Einfach zeigt je Modul nur die wichtigsten Eingaben und Ergebnisse,
+  der Rest (Tabellen, Rechenweg, Sonderfälle) liegt hinter „Mehr anzeigen“. Elemente mit Klasse `adv` gehören zum Experten-Teil.
+- **Zoll direkt eingeben**: Im Zoll-Modus nehmen Längenfelder (Beschriftung endet auf „(mm)“ oder `data-unit="mm"`)
+  Zoll und Brüche wie „1 3/8“ an; mit „mm“ am Ende bleibt der Wert metrisch. Module rechnen weiter in mm.
+- **Gewinde per Foto**: Münze als Maßstab, Gewinde-Ø und Steigung antippen, passende M/MF/UNC/UNF/G-Gewinde mit Abweichung.
+- **Meine Schnittdaten**: eigene Werte je Maschine und Werkzeug, bleiben auf dem Gerät. Teilen ohne Konto als
+  CSV-Datei (öffnet in Excel) oder als Link; beim Import gewinnt die neuere Änderung. Aus „Schnittwerte“ per ★ speichern.
+- **Lernen & Quiz**: Fragen werden aus den Tabellen der App erzeugt, mit Erklärung und Link ins Modul.
+- **Sprachen Deutsch und Englisch**: `src/i18n/en.js` übersetzt die fertige Ansicht. Schlüssel sind die deutschen Texte,
+  Zahlen als `{#}`, Platzhalter wie `{x}` sind Muster. Fehlt ein Text, bleibt er deutsch.
+
 ## Starten
 
 Keine Abhängigkeiten, kein Build-Schritt. Ein beliebiger statischer Webserver reicht:
@@ -58,7 +71,8 @@ Der Workflow `.github/workflows/pages.yml` veröffentlicht sie bei jedem Push au
 ```
 index.html, manifest.webmanifest, sw.js   App-Shell, PWA-Manifest, Service Worker (Offline-Cache)
 src/app.js                                Routing (#/m/<modul>?…), Startseite, Suche, Theme
-src/core/                                 Helfer (DOM, Speicher, Suche, Modul-Liste, Einheiten, Favoriten, Teilen)
+src/core/                                 Helfer (DOM, Speicher, Suche, Modul-Liste, Einheiten, Favoriten, Teilen, Sprache, Zoll-Eingabe)
+src/i18n/en.js                            englisches Wörterbuch
 src/modules/<modul>/data.js               Tabellenwerte
 src/modules/<modul>/calc.js               Rechenlogik ohne DOM (getestet)
 src/modules/<modul>/index.js              Ansicht und Suchtreffer des Moduls

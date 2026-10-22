@@ -27,8 +27,10 @@ export function save(key, value) {
  *   units     metric | inch (Ergebnisse zusätzlich bzw. vorrangig in Zoll)
  *   workshop  Werkstattmodus: große Schrift, hoher Kontrast, große Tasten
  *   steps     Rechenweg standardmäßig aufgeklappt
+ *   expert    Expertenansicht: alles sofort sichtbar (sonst einfache Ansicht mit „Mehr anzeigen“)
+ *   lang      auto | de | en | tr | pl
  */
-const DEFAULT_SETTINGS = { theme: 'auto', units: 'metric', workshop: false, steps: false };
+const DEFAULT_SETTINGS = { theme: 'auto', units: 'metric', workshop: false, steps: false, expert: false, lang: 'auto' };
 
 export function getSettings() {
   return { ...DEFAULT_SETTINGS, ...load('settings', {}) };

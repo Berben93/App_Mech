@@ -16,7 +16,7 @@ function pathGraphic(r, d, D, internal) {
   const S = 220;
   const c = S / 2;
   const sc = 85 / Math.max(internal ? d / 2 : r.R + D / 2, 1);
-  return `<svg class="graphic" viewBox="0 0 ${S} ${S}" style="max-height:260px" role="img" aria-label="Fräsbahn">
+  return `<svg class="graphic adv" viewBox="0 0 ${S} ${S}" style="max-height:260px" role="img" aria-label="Fräsbahn">
     <circle cx="${c}" cy="${c}" r="${(d / 2) * sc}" fill="${internal ? 'none' : 'color-mix(in srgb, var(--muted) 22%, transparent)'}" stroke="var(--text)" stroke-width="2"/>
     <circle cx="${c}" cy="${c}" r="${r.R * sc}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6 4"/>
     <circle class="anim" cx="${c + r.R * sc}" cy="${c}" r="${(D / 2) * sc}" fill="color-mix(in srgb, var(--accent) 35%, transparent)" stroke="var(--accent)" stroke-width="2"/>
@@ -37,21 +37,21 @@ function render(el, params, ctx) {
           <label class="field"><span>Gewinde-Ø d (mm)</span><input name="d" inputmode="decimal" value="${p('d', '12')}" list="gf-d"></label>
           <label class="field"><span>Steigung P (mm)</span><input name="p" inputmode="decimal" value="${p('p', '1.75')}"></label>
           <label class="field"><span>Art</span><select name="a">${options([['i', 'Innengewinde'], ['a', 'Außengewinde']], params.a || 'i')}</select></label>
-          <label class="field"><span>Richtung</span><select name="r">${options([['r', 'Rechts'], ['l', 'Links']], params.r || 'r')}</select></label>
+          <label class="field adv"><span>Richtung</span><select name="r">${options([['r', 'Rechts'], ['l', 'Links']], params.r || 'r')}</select></label>
           <label class="field"><span>Fräser-Ø D (mm)</span><input name="D" inputmode="decimal" value="${p('D', '9.5')}"></label>
           <label class="field"><span>Schneiden z</span><input name="z" inputmode="decimal" value="${p('z', '3')}"></label>
           <label class="field" style="grid-column:1/-1"><span>Werkstoff (Startwerte)</span><select name="w">${options(MATERIALS.map((m) => [m[0], m[1]]), params.w || 'p')}</select></label>
-          <label class="field"><span>vc (m/min)</span><input name="vc" inputmode="decimal" value="${p('vc', '120')}"></label>
-          <label class="field"><span>fz (mm)</span><input name="fz" inputmode="decimal" value="${p('fz', '0.06')}"></label>
+          <label class="field adv"><span>vc (m/min)</span><input name="vc" inputmode="decimal" value="${p('vc', '120')}"></label>
+          <label class="field adv"><span>fz (mm)</span><input name="fz" inputmode="decimal" value="${p('fz', '0.06')}"></label>
           <label class="field"><span>Gewindelänge L (mm)</span><input name="L" inputmode="decimal" value="${p('L', '18')}"></label>
-          <label class="field"><span>Fräsertyp</span><select name="t">${options([['1', 'Einzahn (Gang für Gang)'], ['m', 'Mehrzahn (1 Umlauf)']], params.t || '1')}</select></label>
+          <label class="field adv"><span>Fräsertyp</span><select name="t">${options([['1', 'Einzahn (Gang für Gang)'], ['m', 'Mehrzahn (1 Umlauf)']], params.t || '1')}</select></label>
         </div>
         <datalist id="gf-d">${METRIC_COARSE.map((t) => `<option value="${t.d}">`).join('')}</datalist>
         <p class="note">Bei Regelgewinde-Ø wird die Steigung automatisch gesetzt. Fräser-Ø innen höchstens etwa 80 % von d (Herstellerangabe beachten), sonst verschneidet er die Flanken.</p>
       </form>
       <section class="card" id="gf-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>NC-Programm (Beispiel)</h2>
+    <section class="card adv"><h2>NC-Programm (Beispiel)</h2>
       <pre class="code" id="gf-nc"></pre>
       <div class="chips"><button type="button" class="chip" id="gf-copy">Programm kopieren</button></div>
       <p class="note">ISO/Fanuc-Syntax, Nullpunkt in Gewindemitte an der Oberkante, ohne Werkzeugradiuskorrektur (Mittelpunktsbahn). Vor dem Einsatz an die eigene Steuerung anpassen und im Simulator prüfen. Besser als radial: mit Viertelkreis tangential anfahren.</p></section>`;
@@ -85,12 +85,14 @@ function render(el, params, ctx) {
       <div class="results">
         ${result('Drehzahl n', fmt(Math.round(r.n)), '1/min', true)}
         ${result('Vorschub Fräsermitte (programmieren)', fmt(Math.round(r.vfCenter)), 'mm/min', true)}
-        ${result('Vorschub an der Kontur', fmt(Math.round(r.vfContour)), 'mm/min')}
         ${result('Bahn-Ø / Bahnradius R', `${fmt(r.pathDia, 3)} / ${fmt(r.R, 3)}`, 'mm')}
+        <div class="adv">
+        ${result('Vorschub an der Kontur', fmt(Math.round(r.vfContour)), 'mm/min')}
         ${result('Z je Umlauf', fmt(input.p, 3), 'mm')}
         ${result('Umläufe', fmt(r.turns))}
         ${result('Profiltiefe radial (ISO)', fmt(r.depth, 3), 'mm')}
         ${result('Fräszeit (ohne Anfahren)', `${fmt(r.time, 2)} min = ${fmt(r.time * 60, 0)} s`)}
+        </div>
       </div>
       ${steps([
         { title: 'Drehzahl', formula: 'n = v<sub>c</sub> · 1000 / (π · D)', values: `n = ${fmt(input.vc)} · 1000 / (π · ${fmt(input.D)})`, result: `${fmt(Math.round(r.n))} 1/min` },

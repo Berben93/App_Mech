@@ -2,6 +2,7 @@
 // mit einer bekannten Einheit werden im Zoll-Modus umgerechnet angezeigt
 // (Zoll-Wert groß, metrischer Wert klein darunter).
 import { getSettings } from './store.js';
+import { numberLocale } from './i18n.js';
 
 // Einheit → [Faktor, Zieleinheit, Nachkommastellen]
 export const IMPERIAL = {
@@ -28,15 +29,17 @@ export function isInch() {
   return getSettings().units === 'inch';
 }
 
-// Deutsche Zahl im Text, z. B. 1.234,5 oder −0,021 oder +3
+// Deutsche Zahl im Text, z. B. 1.234,5 oder −0,021 oder +3 (englisch: 1234.5)
 const NUMBER = /([+−-]?)(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:,\d+)?)/g;
+const NUMBER_EN = /([+−-]?)(\d+(?:\.\d+)?)/g;
 
 function parseDe(text) {
   return parseFloat(text.replace(/\./g, '').replace(',', '.'));
 }
 
 function formatDe(value, digits) {
-  return value.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  const loc = numberLocale();
+  return value.toLocaleString(loc, { maximumFractionDigits: digits, minimumFractionDigits: 0, useGrouping: loc !== 'en-US' });
 }
 
 /**
@@ -48,9 +51,10 @@ export function toImperial(valueText, unit) {
   if (!conv || /[<>]/.test(valueText)) return null;
   const [factor, target, digits] = conv;
   let found = false;
-  const text = String(valueText).replace(NUMBER, (_, sign, n) => {
+  const en = numberLocale() === 'en-US';
+  const text = String(valueText).replace(en ? NUMBER_EN : NUMBER, (_, sign, n) => {
     found = true;
-    const v = parseDe(n) * factor;
+    const v = (en ? parseFloat(n) : parseDe(n)) * factor;
     return `${sign}${formatDe(v, digits)}`;
   });
   return found ? { text, unit: target } : null;

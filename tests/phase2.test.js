@@ -190,8 +190,8 @@ test('Verlauf: gleiches Modul ersetzt den obersten Eintrag', () => {
 });
 
 test('Globale Suche findet Phase-2-Module', () => {
-  assert.equal(MODULES.length, 18);
-  assert.equal(new Set(MODULES.map((m) => m.id)).size, 18);
+  assert.equal(MODULES.length, 21);
+  assert.equal(new Set(MODULES.map((m) => m.id)).size, 21);
   const top = (q) => searchAll(q)[0];
   assert.equal(top('45 HRC').module.id, 'haerte');
   assert.equal(top('42CrMo4').module.id, 'werkstoffe');

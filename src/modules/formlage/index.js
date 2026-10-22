@@ -33,7 +33,7 @@ function render(el, params, ctx) {
           <div class="gdt-grid">${SYMBOLS.filter((s) => s.cat === c.id).map((s) => `<button type="button" class="gdt-btn" data-s="${s.id}">${icon(s, 30)}<span>${esc(s.name)}</span></button>`).join('')}</div>`).join('')}
       </section>
     </div>
-    <div class="grid-2">
+    <div class="grid-2 adv">
       <form class="card" id="gd-pos" autocomplete="off">
         <h2>Positionstoleranz prüfen</h2>
         <div class="grid">

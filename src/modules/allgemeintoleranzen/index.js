@@ -16,15 +16,15 @@ function render(el, params, ctx) {
         <div class="grid">
           <label class="field"><span>Nennmaß (mm)</span><input name="d" inputmode="decimal" value="${esc(params.d || '50')}"></label>
           <label class="field"><span>Toleranzklasse</span><select name="k">${CLASSES_1.map((c) => `<option value="${c.key}"${c.key === cls ? ' selected' : ''}>${c.key} (${c.name})</option>`).join('')}</select></label>
-          <label class="field"><span>Form/Lage</span><select name="k2">${CLASSES_2.map((c) => `<option${c === cls2 ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
+          <label class="field adv"><span>Form/Lage</span><select name="k2">${CLASSES_2.map((c) => `<option${c === cls2 ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
         </div>
       </form>
       <section class="card" id="gt-out" aria-live="polite"></section>
     </div>
-    <section class="card"><h2>Längenmaße (mm)</h2><div id="t-linear"></div></section>
-    <section class="card"><h2>Rundungshalbmesser und Fasen (mm)</h2><div id="t-radius"></div></section>
-    <section class="card"><h2>Winkelmaße</h2><p class="note">Bezogen auf die Länge des kürzeren Schenkels in mm.</p><div id="t-angle"></div></section>
-    <section class="card"><h2>Form und Lage (ISO 2768-2, mm)</h2><div id="t-form"></div>
+    <section class="card adv"><h2>Längenmaße (mm)</h2><div id="t-linear"></div></section>
+    <section class="card adv"><h2>Rundungshalbmesser und Fasen (mm)</h2><div id="t-radius"></div></section>
+    <section class="card adv"><h2>Winkelmaße</h2><p class="note">Bezogen auf die Länge des kürzeren Schenkels in mm.</p><div id="t-angle"></div></section>
+    <section class="card adv"><h2>Form und Lage (ISO 2768-2, mm)</h2><div id="t-form"></div>
       <p class="note">Lauf (Rund- und Planlauf): H ${fmt(RUNOUT.H)} · K ${fmt(RUNOUT.K)} · L ${fmt(RUNOUT.L)} mm.</p></section>`;
 
   const form = el.querySelector('#gt-form');
@@ -61,10 +61,12 @@ function render(el, params, ctx) {
         ${lin === null ? '' : result('Grenzmaße', `${fmt(d - lin, 3)} … ${fmt(d + lin, 3)}`, 'mm')}
         ${result('Radius/Fase', pm(radiusTolerance(d, v.k)), 'mm')}
         ${result('Winkel (Schenkel = Maß)', formatMinutes(angleTolerance(d, v.k)))}
+        <div class="adv">
         ${result('Geradheit/Ebenheit', fmt(f.straightness), 'mm')}
         ${result('Rechtwinkligkeit', fmt(f.perpendicularity), 'mm')}
         ${result('Symmetrie', fmt(f.symmetry), 'mm')}
         ${result('Lauf', fmt(RUNOUT[v.k2]), 'mm')}
+        </div>
       </div>
       ${d < 0.5 ? '<p class="note">Unter 0,5 mm sind Grenzabmaße direkt am Maß anzugeben.</p>' : ''}`;
   }

@@ -3,7 +3,7 @@ import { MORSE, TAPERS, SINE_BARS } from './data.js';
 import { cone, tailstockOffset, rightTriangle, boltCircle, sineBar, gaugeBlocks } from './calc.js';
 
 const TABS = [['kegel', 'Kegel'], ['dreieck', 'Steigungsdreieck'], ['lochkreis', 'Lochkreis'], ['sinus', 'Sinuslineal']];
-const field = (name, label, value, extra = '') => `<label class="field"><span>${label}</span><input name="${name}" inputmode="decimal" value="${esc(value ?? '')}" ${extra}></label>`;
+const field = (name, label, value, extra = '', cls = '') => `<label class="field${cls ? ` ${cls}` : ''}"><span>${label}</span><input name="${name}" inputmode="decimal" value="${esc(value ?? '')}" ${extra}></label>`;
 const deg = (v) => {
   const d = Math.floor(v + 1e-9);
   const m = (v - d) * 60;
@@ -85,12 +85,12 @@ function render(el, params, ctx) {
           ${field('D', 'Großer Ø D (mm)', params.D || '30')}
           ${field('d', 'Kleiner Ø d (mm)', params.d || '25')}
           ${field('L', 'Kegellänge L (mm)', params.L || '50')}
-          ${field('Lw', 'Werkstücklänge L<sub>w</sub> (mm)', params.Lw || '', 'placeholder="für Reitstock"')}
+          ${field('Lw', 'Werkstücklänge L<sub>w</sub> (mm)', params.Lw || '', 'placeholder="für Reitstock"', 'adv')}
         </div>
-        <p class="note">Werkstücklänge nur für das Kegeldrehen durch Reitstockverstellung zwischen Spitzen.</p>`,
-      `<section class="card"><h2>Morsekegel (DIN 228)</h2>
+        <p class="note adv">Werkstücklänge nur für das Kegeldrehen durch Reitstockverstellung zwischen Spitzen.</p>`,
+      `<section class="card adv"><h2>Morsekegel (DIN 228)</h2>
         ${table(['Kegel', 'D₁ mm', 'Verhältnis', 'Einstellwinkel α/2'], MORSE.map((m) => [`<strong>${m.name}</strong>`, fmt(m.D, 3), `1 : ${fmt(m.x, 3)}`, deg(Math.atan(1 / (2 * m.x)) * 180 / Math.PI)]))}</section>
-      <section class="card"><h2>Weitere Kegel</h2>
+      <section class="card adv"><h2>Weitere Kegel</h2>
         ${table(['Kegel', 'Verhältnis', 'Einstellwinkel α/2'], TAPERS.map((t) => [esc(t.name), t.x ? `1 : ${fmt(t.x, 3)}` : '–', deg(t.angle ? t.angle / 2 : Math.atan(1 / (2 * t.x)) * 180 / Math.PI)]))}</section>`);
       bind(form, () => {
         const v = formValues(form);
@@ -104,8 +104,10 @@ function render(el, params, ctx) {
             ${result('Einstellwinkel α/2 (Oberschlitten)', deg(c.half), '', true)}
             ${result('Kegelwinkel α', deg(c.angle))}
             ${result('Kegelverhältnis C', `1 : ${fmt(c.ratio, 3)}`)}
+            <div class="adv">
             ${result('Neigung (D − d)/(2·L)', fmt(c.C / 2, 5))}
             ${vr !== null ? result('Reitstockverstellung V<sub>R</sub>', fmt(vr, 3), 'mm') : ''}
+            </div>
           </div>
           ${steps([
             { title: 'Kegelverhältnis', formula: 'C = (D − d) / L', values: `C = (${fmt(D)} − ${fmt(d)}) / ${fmt(L)}`, result: `${fmt(c.C, 5)} = 1 : ${fmt(c.ratio, 3)}` },
@@ -155,8 +157,8 @@ function render(el, params, ctx) {
           ${field('D', 'Lochkreis-Ø (mm)', params.D || '100')}
           ${field('n', 'Anzahl Bohrungen', params.n || '6')}
           ${field('s', 'Startwinkel (°)', params.s || '0')}
-          ${field('x', 'Mitte X (mm)', params.x || '0')}
-          ${field('y', 'Mitte Y (mm)', params.y || '0')}
+          ${field('x', 'Mitte X (mm)', params.x || '0', '', 'adv')}
+          ${field('y', 'Mitte Y (mm)', params.y || '0', '', 'adv')}
         </div>
         <p class="note">0° liegt auf +X, Winkel gegen den Uhrzeigersinn (wie in der CNC-Programmierung).</p>`);
       bind(form, () => {

@@ -1,6 +1,7 @@
 // Ergebnis teilen: als Link, als Bild (PNG) oder als Etikett zum Ausdrucken.
 // Inhalt sind die Ergebniszeilen (.result) der aktuellen Ansicht.
 import { esc } from './dom.js';
+import { t, numberLocale } from './i18n.js';
 
 /** Ergebnisse der Ansicht: [{ heading, rows: [[Bezeichnung, Wert]] }] */
 export function collectResults(root) {
@@ -8,7 +9,8 @@ export function collectResults(root) {
   for (const box of root.querySelectorAll('.results')) {
     const card = box.closest('.card');
     const heading = card?.querySelector('h2, h3')?.textContent.trim() || '';
-    const rows = [...box.querySelectorAll('.result')].map((r) => {
+    // Nur sichtbare Zeilen (in der einfachen Ansicht ist Erweitertes ausgeblendet)
+    const rows = [...box.querySelectorAll('.result')].filter((r) => r.getClientRects().length > 0).map((r) => {
       const label = r.querySelector('.result-label')?.textContent.trim() || '';
       const valueEl = r.querySelector('.result-value')?.cloneNode(true);
       const alt = valueEl?.querySelector('.alt');
@@ -44,7 +46,7 @@ export async function shareLink({ title, text, url }) {
     await navigator.clipboard.writeText(url);
     return 'copied';
   } catch {
-    window.prompt('Link kopieren:', url);
+    window.prompt(t('Link kopieren:'), url);
     return 'prompt';
   }
 }
@@ -85,7 +87,7 @@ export function renderImage({ title, groups, color, url, dark = false }) {
     c.fillRect(pad, y + 10, 5, 20);
     c.fillStyle = fg;
     c.font = `700 20px ${font}`;
-    c.fillText(fitText(c, g.heading || 'Ergebnis', W - 2 * pad - 14), pad + 14, y + 20);
+    c.fillText(fitText(c, g.heading || t('Ergebnis'), W - 2 * pad - 14), pad + 14, y + 20);
     y += groupH;
     for (const [label, value] of g.rows) {
       c.font = `400 18px ${font}`;
@@ -108,8 +110,8 @@ export function renderImage({ title, groups, color, url, dark = false }) {
   }
   c.font = `400 14px ${font}`;
   c.fillStyle = muted;
-  const stamp = new Date().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
-  c.fillText(fitText(c, `Tabellenbuch · ${stamp}`, W - 2 * pad), pad, H - 40);
+  const stamp = new Date().toLocaleString(numberLocale(), { dateStyle: 'medium', timeStyle: 'short' });
+  c.fillText(fitText(c, `${t('Tabellenbuch')} · ${stamp}`, W - 2 * pad), pad, H - 40);
   c.fillText(fitText(c, url, W - 2 * pad), pad, H - 20);
   return canvas;
 }
@@ -124,8 +126,16 @@ function fitText(c, text, max) {
 export async function shareImage(canvas, fileName, title) {
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) return 'failed';
-  const file = new File([blob], fileName, { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) {
+  return shareFile(blob, fileName, title);
+}
+
+/**
+ * Datei über den Teilen-Dialog des Geräts weitergeben (Messenger, Mail, Drive …);
+ * ohne Teilen-Funktion wird sie heruntergeladen. `share: false` lädt immer herunter.
+ */
+export async function shareFile(blob, fileName, title, { share = true } = {}) {
+  const file = new File([blob], fileName, { type: blob.type });
+  if (share && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title });
       return 'shared';
@@ -145,7 +155,7 @@ export async function shareImage(canvas, fileName, title) {
 
 /** Etikett (z. B. 62 mm breit) für Prüfprotokoll oder Werkstück; wird über den Druckdialog ausgegeben. */
 export function printLabel({ title, groups, url, color }) {
-  const stamp = new Date().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+  const stamp = new Date().toLocaleString(numberLocale(), { dateStyle: 'medium', timeStyle: 'short' });
   let el = document.getElementById('print-label');
   if (!el) {
     el = document.createElement('div');
@@ -157,7 +167,7 @@ export function printLabel({ title, groups, url, color }) {
       <div class="label-head">${esc(title)}</div>
       ${groups.map((g) => `${g.heading && g.heading !== title ? `<div class="label-sub">${esc(g.heading)}</div>` : ''}
         <table>${g.rows.map(([l, v]) => `<tr><td>${esc(l)}</td><th>${esc(v)}</th></tr>`).join('')}</table>`).join('')}
-      <div class="label-foot">${esc(stamp)} · Prüfer: ____________</div>
+      <div class="label-foot">${esc(stamp)} · ${esc(t('Prüfer'))}: ____________</div>
       <div class="label-url">${esc(url)}</div>
     </div>`;
   document.documentElement.classList.add('printing-label');
