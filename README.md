@@ -28,8 +28,9 @@ npm start            # http://localhost:5173
 npm test             # Rechenlogik und Datentabellen prüfen
 ```
 
-Für Installation und Offline-Betrieb muss die App über HTTPS (oder `localhost`) ausgeliefert werden,
-z. B. über GitHub Pages, Netlify oder einen eigenen Server.
+Für Installation und Offline-Betrieb muss die App über HTTPS (oder `localhost`) ausgeliefert werden.
+Der Workflow `.github/workflows/pages.yml` veröffentlicht sie bei jedem Push auf `main` über GitHub Pages
+(einmalig unter Settings → Pages als Quelle „GitHub Actions“ wählen).
 
 ## Aufbau
 
