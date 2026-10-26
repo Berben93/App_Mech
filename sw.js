@@ -1,18 +1,21 @@
 // Service Worker: hält alle Dateien der App im Cache, damit sie ohne Netz läuft.
 // Bei jeder Änderung an der App VERSION erhöhen (gleich der Version in package.json),
 // sonst bekommen installierte Apps die neuen Dateien nicht.
-const VERSION = '0.3.1';
+const VERSION = '0.4.0';
 const CACHE = `tabellenbuch-${VERSION}`;
 
 const FILES = [
   './',
   './index.html',
+  './rechtliches.html',
   './manifest.webmanifest',
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/icon-maskable-512.png',
   './assets/icon.svg',
   './src/app.js',
+  './src/boot.js',
+  './src/core/contrast.js',
   './src/core/dom.js',
   './src/core/favorites.js',
   './src/core/i18n.js',
@@ -93,12 +96,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Zuerst Cache, dann Netz. Seitenaufrufe (auch mit #-Route) liefern immer die App-Shell.
+// Zuerst Cache, dann Netz. Seitenaufrufe (auch mit #-Route) liefern die App-Shell,
+// eigene Seiten wie rechtliches.html sich selbst.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   if (req.mode === 'navigate') {
-    event.respondWith(caches.match('./index.html').then((r) => r || fetch(req)));
+    event.respondWith(caches.match(req, { ignoreSearch: true })
+      .then((r) => r || caches.match('./index.html'))
+      .then((r) => r || fetch(req)));
     return;
   }
   event.respondWith(

@@ -65,7 +65,8 @@ export function options(list, selected) {
 
 /** Tabelle aus Kopfzeile und Zeilen; Zellen sind bereits escaped/HTML. */
 export function table(head, rows, cls = '') {
-  return `<div class="table-wrap"><table class="${cls}"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead>`
+  // tabindex: breite Tabellen lassen sich auch per Tastatur seitlich scrollen
+  return `<div class="table-wrap" tabindex="0"><table class="${cls}"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead>`
     + `<tbody>${rows.map((r) => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${(r.cells || r).map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -99,6 +100,11 @@ export function steps(list, title = 'Rechenweg') {
       ${s.values ? `<code class="step-values">${s.values}</code>` : ''}
       ${s.result ? `<span class="step-result">= ${s.result}</span>` : ''}
     </li>`).join('')}</ol></details>`;
+}
+
+/** Sanftes Scrollen nur, wenn das Gerät keine reduzierte Bewegung wünscht. */
+export function smooth() {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
 
 /** Für Vergleiche: klein, ohne Akzente, ß → ss. */

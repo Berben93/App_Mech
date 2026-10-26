@@ -130,6 +130,6 @@ test('Service Worker enthält alle App-Dateien und die Version aus package.json'
     const p = join(dir, f);
     return statSync(p).isDirectory() ? walk(p) : [p];
   });
-  const files = [...walk('src'), ...walk('assets'), 'index.html', 'manifest.webmanifest'];
+  const files = [...walk('src'), ...walk('assets'), 'index.html', 'rechtliches.html', 'manifest.webmanifest'];
   for (const f of files) assert.ok(sw.includes(`'./${f.replace(/\\/g, '/')}'`), `${f} fehlt in sw.js`);
 });

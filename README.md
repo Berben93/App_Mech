@@ -69,6 +69,8 @@ Der Workflow `.github/workflows/pages.yml` veröffentlicht sie bei jedem Push au
 
 ```
 index.html, manifest.webmanifest, sw.js   App-Shell, PWA-Manifest, Service Worker (Offline-Cache)
+rechtliches.html                          Impressum, Datenschutz, Haftungshinweis, Quellen, Barrierefreiheit (ohne JavaScript lesbar)
+src/boot.js                               setzt das Design vor dem ersten Zeichnen (statt Inline-Skript, wegen CSP)
 src/app.js                                Routing (#/m/<modul>?…), Startseite, Suche, Theme
 src/core/                                 Helfer (DOM, Speicher, Suche, Modul-Liste, Einheiten, Favoriten, Teilen, Sprache, Zoll-Eingabe)
 src/i18n/en.js                            englisches Wörterbuch
@@ -83,6 +85,17 @@ In `render` meldet `ctx.setParams(params, label)` den Stand (URL, Favoriten, Ver
 `result(label, wert, einheit)` werden im Zoll-Modus automatisch umgerechnet, `steps([...])` erzeugt den Rechenweg.
 Neue Dateien zusätzlich in `sw.js` eintragen und dort `VERSION` (= Version in `package.json`) erhöhen;
 ein Test prüft beides.
+
+## Datenschutz, Sicherheit, Barrierefreiheit
+
+Regeln, die `tests/sicherheit.test.js` prüft:
+
+- Keine externen Ressourcen und keine Netzverbindungen außer zur App selbst; Content-Security-Policy auf jeder Seite, kein Inline-JavaScript.
+- Text aus URL, Speicher oder Import nur über `esc()` ins HTML.
+- Neue Daten im Local Storage auch in `rechtliches.html` (Datenschutz, Abschnitt 3) beschreiben; der Test kennt alle Schlüssel.
+- Farben: Modulfarben nie direkt als Text- oder Flächenfarbe, sondern über `accent()` aus `src/core/contrast.js`
+  (WCAG AA, im Werkstattmodus AAA); Schrift auf Flächen in Modulfarbe ist `var(--on-accent)`.
+- Sanftes Scrollen nur über `smooth()` aus `dom.js` (beachtet „Bewegung reduzieren“).
 
 ## Hinweis
 

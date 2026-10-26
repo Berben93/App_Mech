@@ -1,4 +1,4 @@
-import { esc, fmt, table, result } from '../../core/dom.js';
+import { esc, fmt, table, result, smooth } from '../../core/dom.js';
 import { METRIC_COARSE, METRIC_FINE, UNIFIED, PIPE_G, TRAPEZ } from './data.js';
 import { metric, unified, pipe, trapez, parseThread } from './calc.js';
 import { screwSize, tighteningTorque } from '../schrauben/calc.js';
@@ -139,7 +139,7 @@ function render(el, params, ctx) {
     if (!tr) return;
     id = tr.dataset.go;
     update();
-    if (window.matchMedia('(max-width: 700px)').matches) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.matchMedia('(max-width: 700px)').matches) detail.scrollIntoView({ behavior: smooth(), block: 'start' });
   });
   update();
 }

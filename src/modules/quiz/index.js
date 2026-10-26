@@ -1,4 +1,4 @@
-import { esc } from '../../core/dom.js';
+import { esc, smooth } from '../../core/dom.js';
 import { load, save } from '../../core/store.js';
 import { CATEGORIES, makeRound } from './calc.js';
 
@@ -82,7 +82,7 @@ function render(el, params, ctx) {
       </div>
       <button type="button" class="btn qz-next" id="qz-next">${i + 1 < round.length ? 'Nächste Frage' : 'Auswertung'}</button>`;
     box.querySelector('#qz-next').focus({ preventScroll: true });
-    box.querySelector('#qz-next').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    box.querySelector('#qz-next').scrollIntoView({ behavior: smooth(), block: 'nearest' });
   }
 
   function finish() {
@@ -105,7 +105,7 @@ function render(el, params, ctx) {
       i++;
       if (i < round.length) question();
       else finish();
-      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      box.scrollIntoView({ behavior: smooth(), block: 'start' });
     }
     if (e.target.id === 'qz-again') start();
   });
