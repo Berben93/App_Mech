@@ -1,4 +1,4 @@
-import { esc, fmt, num, result, table, formValues, steps } from '../../core/dom.js';
+import { esc, fmt, num, result, table, formValues, steps, smooth } from '../../core/dom.js';
 import { SYMBOLS, CATEGORIES, MODIFIERS } from './data.js';
 import { positionDeviation, findSymbol } from './calc.js';
 
@@ -76,7 +76,7 @@ function render(el, params, ctx) {
     if (!b) return;
     sel = SYMBOLS.find((s) => s.id === b.dataset.s);
     update();
-    if (window.matchMedia('(max-width: 700px)').matches) det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.matchMedia('(max-width: 700px)').matches) det.scrollIntoView({ behavior: smooth(), block: 'start' });
   });
   form.addEventListener('input', update);
   update();

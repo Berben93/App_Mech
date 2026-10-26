@@ -1,4 +1,5 @@
 import { esc, fmt, num, options, result, table, steps } from '../../core/dom.js';
+import { textOn } from '../../core/contrast.js';
 import { MATERIALS, PROCESSES, TOOLS, ISO_GROUPS } from './data.js';
 import { turning, milling, drilling, drillFeed, rpm } from './calc.js';
 
@@ -133,7 +134,7 @@ function render(el, params, ctx) {
       ['Gruppe', 'Werkstoff', 'HM', 'HSS', dia > 0 ? `n bei Ø${fmt(dia)} (HM)` : 'n'],
       MATERIALS.map((m) => ({
         cls: m.id === mat.id ? 'hl' : '',
-        cells: [`<span class="pill" style="background:${ISO_GROUPS[m.iso].color};color:#fff">${m.iso}</span>`, esc(m.name), cell(m[proc].hm), cell(m[proc].hss),
+        cells: [`<span class="pill" style="background:${ISO_GROUPS[m.iso].color};color:${textOn(ISO_GROUPS[m.iso].color)}">${m.iso}</span>`, esc(m.name), cell(m[proc].hm), cell(m[proc].hss),
           dia > 0 ? fmt(Math.round(rpm(mean(m[proc].hm), dia))) : '–'],
       })),
     );

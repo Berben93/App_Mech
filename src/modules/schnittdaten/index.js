@@ -1,9 +1,9 @@
-import { esc, fmt, num, options, formValues } from '../../core/dom.js';
+import { esc, fmt, num, options, formValues, smooth } from '../../core/dom.js';
 import { t, decimalSep } from '../../core/i18n.js';
 import { load, save } from '../../core/store.js';
 import { shareFile, shareLink } from '../../core/share.js';
 import { MATERIALS } from '../schnittwerte/data.js';
-import { PROCS, normalizeEntry, derived, mergeEntries, sortEntries, toCSV, parseImport, encodeLink, decodeLink, newId } from './calc.js';
+import { PROCS, normalizeEntry, derived, mergeEntries, sortEntries, toCSV, parseImport, encodeLink, decodeLink, newId, MAX_IMPORT_BYTES } from './calc.js';
 
 const STORE_KEY = 'cutdata';
 const AUTHOR_KEY = 'cutdata-author';
@@ -133,7 +133,7 @@ function render(el, params, ctx) {
       </div>`;
     form.hidden = false;
     syncForm();
-    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    form.scrollIntoView({ behavior: smooth(), block: 'start' });
     form.elements.machine.focus({ preventScroll: true });
   }
 
@@ -226,7 +226,7 @@ function render(el, params, ctx) {
       <p>${esc(source)}: ${fresh} neu, ${found.length - fresh} schon vorhanden (die neuere Änderung gewinnt).</p>
       <ul class="list-plain">${found.slice(0, 5).map((e) => `<li>${esc([e.tool, e.material, e.machine].filter(Boolean).join(' · '))}</li>`).join('')}${found.length > 5 ? `<li>… und ${found.length - 5} weitere</li>` : ''}</ul>
       <div class="sheet-actions"><button type="button" class="btn secondary" data-imp="no">Verwerfen</button><button type="button" class="btn" data-imp="yes">Übernehmen</button></div></div>`;
-    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    box.scrollIntoView({ behavior: smooth(), block: 'start' });
   }
 
   el.querySelector('#cd-import').addEventListener('click', (e) => {
@@ -247,6 +247,7 @@ function render(el, params, ctx) {
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
+    if (file.size > MAX_IMPORT_BYTES) { offerImport([], `${file.name} (Datei zu groß)`); return; }
     try {
       offerImport(parseImport(await file.text()), file.name);
     } catch (err) {

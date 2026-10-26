@@ -1,4 +1,5 @@
-import { esc, fmt, result, table } from '../../core/dom.js';
+import { esc, fmt, result, table, smooth } from '../../core/dom.js';
+import { textOn } from '../../core/contrast.js';
 import { MATERIALS, GROUPS, MACH_LABEL } from './data.js';
 import { findMaterial, searchMaterials } from './calc.js';
 import { ISO_GROUPS } from '../schnittwerte/data.js';
@@ -7,11 +8,11 @@ import { MATERIALS as WEIGHT_MATERIALS } from '../gewicht/data.js';
 const WELD_CLASS = { gut: 'spiel', bedingt: 'uebergang', schlecht: 'uebermass' };
 
 function isoPill(iso) {
-  return `<span class="pill" style="background:${ISO_GROUPS[iso].color};color:#fff" title="ISO-Gruppe ${iso}: ${esc(ISO_GROUPS[iso].name)}">${iso}</span>`;
+  return `<span class="pill" style="background:${ISO_GROUPS[iso].color};color:${textOn(ISO_GROUPS[iso].color)}" title="ISO-Gruppe ${iso}: ${esc(ISO_GROUPS[iso].name)}">${iso}</span>`;
 }
 
 function stars(n) {
-  return `<span class="rating" aria-label="${MACH_LABEL[n]}" title="${MACH_LABEL[n]}">${'●'.repeat(n)}<span class="off">${'●'.repeat(5 - n)}</span></span>`;
+  return `<span class="rating" role="img" aria-label="${MACH_LABEL[n]}" title="${MACH_LABEL[n]}">${'●'.repeat(n)}<span class="off">${'●'.repeat(5 - n)}</span></span>`;
 }
 
 /** Steckbrief eines Werkstoffs (Modul und Suche). */
@@ -99,7 +100,7 @@ function render(el, params, ctx) {
     if (!tr) return;
     sel = findMaterial(tr.dataset.go);
     update();
-    if (window.matchMedia('(max-width: 700px)').matches) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.matchMedia('(max-width: 700px)').matches) detail.scrollIntoView({ behavior: smooth(), block: 'start' });
   });
   update();
 }

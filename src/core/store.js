@@ -28,7 +28,7 @@ export function save(key, value) {
  *   workshop  Werkstattmodus: große Schrift, hoher Kontrast, große Tasten
  *   steps     Rechenweg standardmäßig aufgeklappt
  *   expert    Expertenansicht: alles sofort sichtbar (sonst einfache Ansicht mit „Mehr anzeigen“)
- *   lang      auto | de | en | tr | pl
+ *   lang      auto | de | en
  */
 const DEFAULT_SETTINGS = { theme: 'auto', units: 'metric', workshop: false, steps: false, expert: false, lang: 'auto' };
 
@@ -41,4 +41,14 @@ export function setSetting(name, value) {
   s[name] = value;
   save('settings', s);
   return s;
+}
+
+/** Alle Daten der App auf diesem Gerät löschen (Einstellungen, Favoriten, eigene Daten …). */
+export function clearAll() {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(PREFIX)) localStorage.removeItem(k);
+    return true;
+  } catch {
+    return false;
+  }
 }

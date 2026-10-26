@@ -2,6 +2,9 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <!-- Sicherheit: nur Dateien der App selbst laden, kein fremder Code, keine externen Verbindungen -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tabellenbuch</title>
   <meta name="description" content="Tabellenbuch für die Zerspanung: Passungen, Toleranzen, Gewinde, Schnittwerte, Werkstoffe, Härte, Normteile, Biegen, Kosten und mehr. Offline, ohne Werbung, ohne Konto.">
@@ -11,24 +14,17 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <script>
-    // Theme vor dem ersten Zeichnen setzen, damit der Dunkelmodus nicht aufblitzt
-    try {
-      var s = JSON.parse(localStorage.getItem('wtb:settings') || '{}');
-      if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;
-      if (s.workshop) document.documentElement.dataset.workshop = '';
-      if (!s.expert) document.documentElement.dataset.simple = '';
-    } catch (e) {}
-  </script>
+  <script src="src/boot.js"></script>
   <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#view">Zum Inhalt springen</a>
   <header id="app-header" class="app-header">
     <div class="bar">
       <button id="back" class="icon-btn" type="button" aria-label="Zur Startseite" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <h1 id="title">Tabellenbuch</h1>
+      <h1 id="title" tabindex="-1">Tabellenbuch</h1>
       <span id="offline" class="offline" hidden>offline</span>
       <button id="units" class="units-btn" type="button" aria-label="Einheiten umschalten" title="Zoll/Metrisch umschalten">mm</button>
       <button id="settings-btn" class="icon-btn" type="button" aria-label="Einstellungen" title="Einstellungen">
@@ -40,7 +36,7 @@
       <input id="search" type="search" placeholder="Suchen: M12, 25 H7/g6, Ra 1,6 …" autocomplete="off" enterkeyhint="search" aria-label="Suche">
     </form>
   </header>
-  <main id="view" class="view"></main>
+  <main id="view" class="view" tabindex="-1"></main>
   <dialog id="settings" class="sheet" aria-labelledby="settings-title">
     <form method="dialog">
       <h2 id="settings-title">Einstellungen</h2>
@@ -65,8 +61,14 @@
       </fieldset>
       <label class="switch"><input type="checkbox" data-setting="workshop"><span><strong>Werkstattmodus</strong><small>Große Schrift, hoher Kontrast, große Tasten für Handschuhe</small></span></label>
       <label class="switch"><input type="checkbox" data-setting="steps"><span><strong>Rechenweg immer aufklappen</strong><small>Formel und eingesetzte Werte unter jedem Ergebnis</small></span></label>
+      <div class="opt-data">
+        <p class="note">Alle Daten bleiben auf diesem Gerät. <a href="rechtliches.html#datenschutz">Datenschutz</a> · <a href="rechtliches.html#impressum">Impressum</a></p>
+        <div class="chips">
+          <button type="button" class="btn secondary small" id="clear-history">Verlauf löschen</button>
+          <button type="button" class="btn secondary small" id="clear-all">Alle gespeicherten Daten löschen</button>
+        </div>
+      </div>
       <div class="sheet-actions">
-        <button type="button" class="btn secondary small" id="clear-history">Verlauf löschen</button>
         <button class="btn">Fertig</button>
       </div>
     </form>

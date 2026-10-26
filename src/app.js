@@ -5,12 +5,15 @@
 import { MODULES, getModule } from './core/registry.js';
 import { searchAll } from './core/search.js';
 import { esc, $ } from './core/dom.js';
-import { getSettings, setSetting } from './core/store.js';
+import { getSettings, setSetting, clearAll } from './core/store.js';
 import { getFavorites, isFavorite, toggleFavorite, removeFavorite, getHistory, addHistory, clearHistory } from './core/favorites.js';
 import { collectResults, resultsText, shareLink, renderImage, shareImage, printLabel } from './core/share.js';
 import { enhanceLengthInputs } from './core/inchinput.js';
 import { isInch } from './core/units.js';
 import { LANGS, lang, initI18n, translateDocument, t, decimalSep } from './core/i18n.js';
+import { accent } from './core/contrast.js';
+
+const BRAND = '#1d4ed8';
 
 const view = $('#view');
 const titleEl = $('#title');
@@ -60,15 +63,17 @@ function setParams(params, label) {
 
 function setChrome({ title, color, back }) {
   titleEl.textContent = title;
-  document.documentElement.style.setProperty('--accent', color || 'var(--brand)');
+  // Modulfarbe mit ausreichendem Kontrast für das aktuelle Design (WCAG AA, Werkstattmodus AAA)
+  document.documentElement.style.setProperty('--accent', accent(color || BRAND));
   backBtn.hidden = !back;
   document.title = title === 'Tabellenbuch' ? t('Tabellenbuch') : `${t(title)} · ${t('Tabellenbuch')}`;
 }
 
 function shortcut(entry, removable) {
   const mod = getModule(entry.module);
-  if (!mod) return '';
-  return `<li class="shortcut" style="--accent:${mod.color}">
+  // Nur App-interne Links (#/…) anzeigen, auch wenn der Speicher verändert wurde
+  if (!mod || !/^#\/m\//.test(String(entry.hash))) return '';
+  return `<li class="shortcut" style="--accent:${accent(mod.color)}">
       <a href="${esc(entry.hash)}"><span class="dot" aria-hidden="true"></span>
         <span><strong>${esc(entry.label || mod.title)}</strong><small>${esc(mod.title)}</small></span></a>
       ${removable ? `<button type="button" class="icon-btn small" data-unfav="${esc(entry.hash)}" aria-label="Favorit entfernen" title="Favorit entfernen">
@@ -95,7 +100,13 @@ function renderHome() {
     </section>
     <p class="hint">Tipp: In der Suche oben findet z. B. <a href="#/suche?q=M12">M12</a>,
       <a href="#/suche?q=25%20H7%2Fg6">25 H7/g6</a>, <a href="#/suche?q=1.4301">1.4301</a> oder <a href="#/suche?q=45%20HRC">45 HRC</a> direkt die passenden Werte.
-      Mit ☆ in einem Modul landet die Rechnung oben als Favorit.</p>`;
+      Mit ☆ in einem Modul landet die Rechnung oben als Favorit.</p>
+    <p class="note">Alle Werte ohne Gewähr: vor der Verwendung mit Norm, Zeichnung und Herstellerangaben prüfen.</p>
+    <nav class="legal-links" aria-label="Rechtliches">
+      <a href="rechtliches.html#impressum">Impressum</a><a href="rechtliches.html#datenschutz">Datenschutz</a>
+      <a href="rechtliches.html#haftung">Hinweis zu den Werten</a><a href="rechtliches.html#quellen">Quellen</a>
+      <a href="rechtliches.html#barrierefreiheit">Barrierefreiheit</a>
+    </nav>`;
   view.querySelectorAll('[data-unfav]').forEach((b) => b.addEventListener('click', () => {
     removeFavorite(b.dataset.unfav);
     renderHome();
@@ -117,13 +128,13 @@ function renderSearch(q) {
   const cards = hits.filter((h) => h.html);
   const list = hits.filter((h) => !h.html);
   view.innerHTML = `
-    ${cards.map((h) => `<article class="card quick" style="--accent:${h.module.color}">
+    ${cards.map((h) => `<article class="card quick" style="--accent:${accent(h.module.color)}">
         <header class="quick-head"><span class="badge">${esc(h.module.title)}</span><h2>${esc(h.title)}</h2></header>
         ${h.html}
         <a class="more" href="${buildHash(['m', h.module.id], h.params)}">Im Modul öffnen →</a>
       </article>`).join('')}
     ${list.length ? `<ul class="hits">${list.map((h) => `
-      <li><a href="${buildHash(['m', h.module.id], h.params)}" style="--accent:${h.module.color}">
+      <li><a href="${buildHash(['m', h.module.id], h.params)}" style="--accent:${accent(h.module.color)}">
         <span class="dot" aria-hidden="true"></span>
         <span><strong>${esc(h.title)}</strong><small>${esc(h.text || h.module.title)}</small></span>
       </a></li>`).join('')}</ul>` : ''}`;
@@ -141,7 +152,7 @@ function renderModule(id, params) {
     </div>`;
   const el = document.createElement('div');
   el.className = 'module';
-  el.style.setProperty('--accent', mod.color);
+  el.style.setProperty('--accent', accent(mod.color));
   el.classList.toggle('show-adv', expanded.has(mod.id));
   view.append(el);
   const more = document.createElement('button');
@@ -209,7 +220,9 @@ function toast(text) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
-function route() {
+let firstRoute = true;
+// keepFocus: Ansicht nur neu aufbauen (z. B. nach einer Einstellung), Fokus bleibt, wo er ist
+function route({ keepFocus = false } = {}) {
   if (typeof cleanup === 'function') cleanup();
   cleanup = null;
   current = null;
@@ -220,6 +233,10 @@ function route() {
   else renderHome();
   if (parts[0] !== 'suche') searchInput.value = '';
   window.scrollTo(0, 0);
+  // Screenreader und Tastatur: nach dem Seitenwechsel auf die neue Überschrift, nicht ins Leere
+  // (bei der Suche bleibt der Fokus im Suchfeld)
+  if (!firstRoute && !keepFocus && parts[0] !== 'suche' && document.activeElement !== searchInput) titleEl.focus({ preventScroll: true });
+  firstRoute = false;
 }
 
 // Suche: während der Eingabe live aktualisieren
@@ -238,9 +255,15 @@ $('#search-form').addEventListener('submit', (e) => {
   searchInput.blur();
 });
 
+// „Zum Inhalt springen“: Fokus in den Hauptbereich, ohne die Route (#…) zu ändern
+document.querySelector('.skip-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  view.focus();
+});
+
 // Zurück führt immer eine Ebene nach oben zur Startseite (vorhersehbar, auch nach geteiltem Link)
 backBtn.addEventListener('click', () => { location.hash = '#/'; });
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => route());
 
 // Einstellungen: Design, Einheiten, Werkstattmodus, Rechenweg
 function applySettings() {
@@ -275,9 +298,10 @@ function changeSetting(name, value) {
   // Einheiten und Rechenweg wirken auf die Ergebnisse: Ansicht neu aufbauen (Eingaben stehen in der URL)
   // Neue Sprache: neu laden, damit alle Texte und Zahlen im neuen Format erscheinen
   if (name === 'lang' && before !== value) { location.reload(); return; }
-  if ((name === 'units' || name === 'steps') && before !== value) {
+  // Design und Werkstattmodus ändern die Modulfarben (Kontrast), daher auch neu aufbauen
+  if (['units', 'steps', 'theme', 'workshop'].includes(name) && before !== value) {
     const y = window.scrollY;
-    route();
+    route({ keepFocus: true });
     window.scrollTo(0, y);
   }
 }
@@ -299,16 +323,26 @@ $('#settings').addEventListener('click', (e) => {
 $('#settings').addEventListener('change', (e) => {
   if (e.target.dataset.setting) changeSetting(e.target.dataset.setting, e.target.checked);
 });
+// Datenschutz: alles löschen, was die App auf diesem Gerät gespeichert hat
+$('#clear-all').addEventListener('click', () => {
+  if (!window.confirm(t('Alle gespeicherten Daten löschen? Einstellungen, Favoriten, Verlauf, eigene Schnittdaten, eigene Werkstoffe und Quiz-Ergebnisse gehen verloren.'))) return;
+  clearAll();
+  location.hash = '#/';
+  location.reload();
+});
 $('#clear-history').addEventListener('click', () => {
   clearHistory();
   toast('Verlauf gelöscht');
   if (!current && parseHash().parts.length === 0) renderHome();
 });
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySettings);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  applySettings();
+  if (getSettings().theme === 'auto') route({ keepFocus: true });
+});
 applySettings();
 // Sprachauswahl (Namen der Sprachen bleiben in ihrer eigenen Sprache)
 document.querySelector('.seg[data-setting="lang"]').innerHTML = [['auto', 'Auto'], ...LANGS]
-  .map(([k, l]) => `<button type="button" data-value="${k}" translate="no">${l}</button>`).join('');
+  .map(([k, l]) => `<button type="button" data-value="${k}" translate="no"${k === 'auto' ? '' : ` lang="${k}"`}>${l}</button>`).join('');
 applySettings();
 
 // Rechenweg auf-/zuklappen merkt sich die App für alle Module

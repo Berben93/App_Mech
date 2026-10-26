@@ -68,6 +68,20 @@ export function sortEntries(list) {
 // CSV für Excel/LibreOffice (deutsch: Semikolon und Dezimalkomma)
 export const CSV_HEAD = ['Maschine', 'Werkzeug', 'Werkstoff', 'Verfahren', 'Ø mm', 'Schneiden z', 'vc m/min', 'f mm/U bzw. fz mm', 'ap mm', 'ae mm', 'n 1/min', 'vf mm/min', 'Notiz', 'Von', 'Geändert', 'ID'];
 
+// Obergrenzen für Importe aus Datei oder Link (Schutz vor riesigen oder manipulierten Daten)
+export const MAX_ENTRIES = 2000;
+export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Text, den Excel/LibreOffice als Formel lesen würden (=, +, -, @, Tab, CR am Anfang),
+ * mit Apostroph entschärfen. Sonst könnte ein manipulierter geteilter Eintrag beim
+ * Öffnen der CSV eine Formel ausführen („CSV-Injection“).
+ */
+export function safeText(v) {
+  const s = String(v ?? '');
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+}
+
 function csvCell(v, sep) {
   const s = String(v ?? '');
   return /["\n\r]/.test(s) || s.includes(sep) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -77,7 +91,8 @@ export function toCSV(entries, { sep = ';', dec = ',' } = {}) {
   const n = (v, digits = 4) => (v === null || v === undefined || !Number.isFinite(v) ? '' : String(Math.round(v * 10 ** digits) / 10 ** digits).replace('.', dec));
   const rows = entries.map((e) => {
     const d = derived(e);
-    return [e.machine, e.tool, e.material, PROCS[e.proc], n(e.d), n(e.z), n(e.vc), n(e.f), n(e.ap), n(e.ae), n(d.n, 0), n(d.vf, 0), e.note, e.by, e.updated, e.id];
+    const x = safeText;
+    return [x(e.machine), x(e.tool), x(e.material), PROCS[e.proc], n(e.d), n(e.z), n(e.vc), n(e.f), n(e.ap), n(e.ae), n(d.n, 0), n(d.vf, 0), x(e.note), x(e.by), e.updated, x(e.id)];
   });
   // BOM, damit Excel Umlaute richtig liest
   return `﻿${[CSV_HEAD, ...rows].map((r) => r.map((c) => csvCell(c, sep)).join(sep)).join('\r\n')}\r\n`;
@@ -118,7 +133,9 @@ export function parseCSV(text) {
     vc: col('vc'), f: col('f ', 'f mm', 'fz', 'vorschub', 'feed'), ap: col('ap'), ae: col('ae'),
     note: col('notiz', 'note', 'bemerkung'), by: col('von', 'by', 'autor'), updated: col('geändert', 'updated', 'datum'), id: col('id'),
   };
-  return rows.slice(1).map((r) => normalizeEntry(Object.fromEntries(Object.entries(idx).filter(([, i]) => i >= 0).map(([k, i]) => [k, r[i]])))).filter(Boolean);
+  // Eigenen Schutz-Apostroph (siehe safeText) beim Einlesen wieder entfernen
+  const cell = (v) => (typeof v === 'string' && /^'[=+\-@\t\r]/.test(v) ? v.slice(1) : v);
+  return rows.slice(1, MAX_ENTRIES + 1).map((r) => normalizeEntry(Object.fromEntries(Object.entries(idx).filter(([, i]) => i >= 0).map(([k, i]) => [k, cell(r[i])])))).filter(Boolean);
 }
 
 // Austauschformat: Datei (JSON) und Link (Base64url, wenn möglich komprimiert)
@@ -129,11 +146,12 @@ export function toExport(entries) {
 /** JSON- oder CSV-Text einer Datei lesen. Liefert Einträge oder wirft einen Fehler. */
 export function parseImport(text) {
   const t = String(text ?? '').trim();
+  if (t.length > MAX_IMPORT_BYTES) throw new Error('Datei zu groß');
   if (t.startsWith('{') || t.startsWith('[')) {
     const data = JSON.parse(t);
-    const list = Array.isArray(data) ? data : data.entries;
+    const list = Array.isArray(data) ? data : data?.entries;
     if (!Array.isArray(list)) throw new Error('Keine Schnittdaten in der Datei');
-    return list.map(normalizeEntry).filter(Boolean);
+    return list.slice(0, MAX_ENTRIES).map(normalizeEntry).filter(Boolean);
   }
   const list = parseCSV(t);
   if (!list.length) throw new Error('Keine Schnittdaten in der Datei');
@@ -171,6 +189,8 @@ export async function decodeLink(text) {
   let bytes = bytesFromB64url(text.slice(1));
   if (kind === 'z') bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
   else if (kind !== 'j') throw new Error('Unbekanntes Format');
+  if (bytes.length > MAX_IMPORT_BYTES) throw new Error('Link zu groß');
   const rows = JSON.parse(new TextDecoder().decode(bytes));
-  return rows.map((r) => normalizeEntry(Object.fromEntries(KEYS.map((k, i) => [k, r[i]])))).filter(Boolean);
+  if (!Array.isArray(rows)) throw new Error('Unbekanntes Format');
+  return rows.slice(0, MAX_ENTRIES).filter(Array.isArray).map((r) => normalizeEntry(Object.fromEntries(KEYS.map((k, i) => [k, r[i]])))).filter(Boolean);
 }

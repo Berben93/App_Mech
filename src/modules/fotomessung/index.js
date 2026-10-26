@@ -1,4 +1,5 @@
 import { esc, fmt, num, options, result, formValues } from '../../core/dom.js';
+import { textOn } from '../../core/contrast.js';
 import { load, save } from '../../core/store.js';
 import { COINS, measure, matchThread, confidence } from './calc.js';
 
@@ -18,6 +19,8 @@ function render(el, params, ctx) {
   let active = 'ref';
   let img = null;
   let drag = null;
+  // Fadenkreuz für die Bedienung per Tastatur (Bildkoordinaten)
+  let cursor = null;
   let coin = COINS.find((c) => c.id === (params.c || load(COIN_KEY, 'eur2'))) || COINS[0];
 
   el.innerHTML = `
@@ -38,14 +41,15 @@ function render(el, params, ctx) {
           <label class="btn secondary pm-file">Bild wählen<input type="file" accept="image/*" id="pm-pick" hidden></label>
         </div>
         <div class="seg pm-pairs" role="group" aria-label="Was markierst du?" style="margin-top:12px">
-          ${PAIRS.map((p) => `<button type="button" data-p="${p.key}" style="--pair:${p.color}"><span class="pm-dot"></span>${p.label}</button>`).join('')}
+          ${PAIRS.map((p) => `<button type="button" data-p="${p.key}" style="--pair:${p.color};--on-pair:${textOn(p.color)}"><span class="pm-dot" aria-hidden="true"></span>${p.label}</button>`).join('')}
         </div>
         <p class="note" id="pm-hint"></p>
         <div class="pm-stage" id="pm-stage">
-          <canvas id="pm-canvas" aria-label="Foto mit Messpunkten"></canvas>
+          <canvas id="pm-canvas" tabindex="0" aria-describedby="pm-keys" aria-label="Foto mit Messpunkten"></canvas>
           <canvas id="pm-loupe" class="pm-loupe" width="240" height="240" hidden></canvas>
           <p class="empty pm-empty" id="pm-empty">Noch kein Foto. Tippe auf „Foto aufnehmen“.</p>
         </div>
+        <p class="note" id="pm-keys">Mit Tastatur: Foto mit Tab auswählen, Pfeiltasten bewegen das Fadenkreuz (mit Umschalt in großen Schritten), Eingabe oder Leertaste setzt den Punkt.</p>
         <div class="chips" style="margin-top:10px">
           <button type="button" class="chip" id="pm-clear">Punkte dieser Messung löschen</button>
         </div>
@@ -110,6 +114,18 @@ function render(el, params, ctx) {
         cx.stroke();
       }
     }
+    if (cursor && canvas.matches(':focus-visible')) {
+      const col = PAIRS.find((p) => p.key === active).color;
+      const [x, y] = [cursor.x * s, cursor.y * s];
+      for (const [w, c] of [[4, '#fff'], [2, col]]) {
+        cx.lineWidth = w;
+        cx.strokeStyle = c;
+        cx.beginPath();
+        cx.moveTo(x - 16, y); cx.lineTo(x - 4, y); cx.moveTo(x + 4, y); cx.lineTo(x + 16, y);
+        cx.moveTo(x, y - 16); cx.lineTo(x, y - 4); cx.moveTo(x, y + 4); cx.lineTo(x, y + 16);
+        cx.stroke();
+      }
+    }
   }
 
   function drawLoupe(pt, clientX, clientY) {
@@ -153,6 +169,17 @@ function render(el, params, ctx) {
     };
   }
 
+  /** Punkt der aktiven Messung setzen; sind schon zwei da, wird der nähere ersetzt. */
+  function place(p) {
+    const list = pts[active];
+    if (list.length < 2) list.push(p);
+    else {
+      const i = Math.hypot(list[0].x - p.x, list[0].y - p.y) < Math.hypot(list[1].x - p.x, list[1].y - p.y) ? 0 : 1;
+      list[i] = p;
+    }
+    return { key: active, i: list.indexOf(p) };
+  }
+
   canvas.addEventListener('pointerdown', (e) => {
     if (!img) return;
     e.preventDefault();
@@ -169,16 +196,7 @@ function render(el, params, ctx) {
     if (best) {
       active = best.key;
       drag = best;
-    } else {
-      const list = pts[active];
-      if (list.length < 2) list.push(p);
-      else {
-        const i = Math.hypot(list[0].x - p.x, list[0].y - p.y) < Math.hypot(list[1].x - p.x, list[1].y - p.y) ? 0 : 1;
-        list[i] = p;
-      }
-      drag = { key: active, i: pts[active].length - 1 };
-      if (pts[active].length === 2 && !best) drag.i = pts[active].indexOf(p);
-    }
+    } else drag = place(p);
     canvas.setPointerCapture(e.pointerId);
     drawLoupe(pts[drag.key][drag.i], e.clientX, e.clientY);
     syncPairs();
@@ -193,10 +211,8 @@ function render(el, params, ctx) {
     draw();
     update();
   });
-  const endDrag = () => {
-    if (!drag) return;
-    drag = null;
-    loupe.hidden = true;
+  /** Nach zwei Punkten einer Messung automatisch zur nächsten offenen Messung. */
+  function advance() {
     // Nach zwei Münzpunkten automatisch zum Gewinde-Ø, danach zur Steigung
     const order = PAIRS.map((p) => p.key);
     if (pts[active].length === 2) {
@@ -205,9 +221,41 @@ function render(el, params, ctx) {
     }
     syncPairs();
     draw();
+  }
+  const endDrag = () => {
+    if (!drag) return;
+    drag = null;
+    loupe.hidden = true;
+    advance();
   };
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
+
+  // Tastatur: Fadenkreuz bewegen und Punkte setzen
+  canvas.addEventListener('focus', () => {
+    if (img && !cursor) cursor = { x: img.width / 2, y: img.height / 2 };
+    draw();
+  });
+  canvas.addEventListener('blur', () => { loupe.hidden = true; draw(); });
+  canvas.addEventListener('keydown', (e) => {
+    if (!img || !cursor) return;
+    const step = (e.shiftKey ? 20 : 2) / viewScale();
+    const move = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+    const rect = canvas.getBoundingClientRect();
+    const s = viewScale();
+    if (move) {
+      e.preventDefault();
+      cursor = { x: Math.min(Math.max(cursor.x + move[0], 0), img.width), y: Math.min(Math.max(cursor.y + move[1], 0), img.height) };
+      drawLoupe(cursor, rect.left + cursor.x * s, rect.top + cursor.y * s);
+      draw();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      place({ ...cursor });
+      loupe.hidden = true;
+      update();
+      advance();
+    }
+  });
 
   function syncPairs() {
     el.querySelectorAll('[data-p]').forEach((b) => {
