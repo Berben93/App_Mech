@@ -26,7 +26,6 @@ import kegel from '../modules/kegel/index.js';
 import kosten from '../modules/kosten/index.js';
 import toleranzketten from '../modules/toleranzketten/index.js';
 import formlage from '../modules/formlage/index.js';
-import gewindefraesen from '../modules/gewindefraesen/index.js';
 import fotomessung from '../modules/fotomessung/index.js';
 import schnittdaten from '../modules/schnittdaten/index.js';
 import quiz from '../modules/quiz/index.js';
@@ -38,7 +37,6 @@ export const MODULES = [
   formlage,
   gewinde,
   fotomessung,
-  gewindefraesen,
   senkungen,
   schrauben,
   normteile,

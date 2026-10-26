@@ -12,7 +12,6 @@ import { jobCost } from '../src/modules/kosten/calc.js';
 import { parseTol, chain, encodeLinks, decodeLinks } from '../src/modules/toleranzketten/calc.js';
 import { positionDeviation, findSymbol } from '../src/modules/formlage/calc.js';
 import { SYMBOLS } from '../src/modules/formlage/data.js';
-import { threadMill, ncProgram } from '../src/modules/gewindefraesen/calc.js';
 import { toImperial } from '../src/core/units.js';
 import { addHistory } from '../src/core/favorites.js';
 import { searchAll } from '../src/core/search.js';
@@ -158,20 +157,6 @@ test('Form und Lage', () => {
   assert.equal(findSymbol('Ebenheit')[0].id, 'ebenheit');
 });
 
-test('Gewindefräsen', () => {
-  const r = threadMill({ d: 12, p: 1.75, internal: true, D: 9.5, z: 3, vc: 120, fz: 0.06, L: 18 });
-  near(r.n, 4020.7, 0.1);
-  near(r.vfContour, 723.7, 0.1);
-  near(r.R, 1.25, 1e-9);
-  near(r.vfCenter, 723.7 * 2.5 / 12, 0.1);
-  assert.equal(r.turns, 12);
-  assert.ok(threadMill({ d: 12, p: 1.75, D: 12, z: 3, vc: 120, fz: 0.06, L: 18 }).error);
-  const prog = ncProgram({ d: 12, p: 1.75, internal: true, D: 9.5, L: 18 }, r);
-  assert.match(prog, /G03 X1\.25 Y0 Z-16\.25 I-1\.25 J0/);
-  const ext = threadMill({ d: 20, p: 2.5, internal: false, D: 10, z: 4, vc: 100, fz: 0.05, L: 10, multi: true });
-  assert.match(ncProgram({ d: 20, p: 2.5, internal: false, D: 10, L: 10 }, ext), /G02 X15 Y0 Z-2\.5 I-15 J0/);
-});
-
 test('Zoll-Umrechnung der Ergebnisse', () => {
   assert.deepEqual(toImperial('25,4', 'mm'), { text: '1', unit: 'in' });
   assert.deepEqual(toImperial('13 / 13,5', 'mm'), { text: '0,5118 / 0,5315', unit: 'in' });
@@ -190,15 +175,15 @@ test('Verlauf: gleiches Modul ersetzt den obersten Eintrag', () => {
 });
 
 test('Globale Suche findet Phase-2-Module', () => {
-  assert.equal(MODULES.length, 21);
-  assert.equal(new Set(MODULES.map((m) => m.id)).size, 21);
+  assert.equal(MODULES.length, 20);
+  assert.equal(new Set(MODULES.map((m) => m.id)).size, 20);
   const top = (q) => searchAll(q)[0];
   assert.equal(top('45 HRC').module.id, 'haerte');
   assert.equal(top('42CrMo4').module.id, 'werkstoffe');
   assert.equal(top('MK 3').module.id, 'kegel');
   assert.equal(top('DIN 471 20').module.id, 'normteile');
   assert.equal(top('Freistich M12').module.id, 'senkungen');
-  assert.equal(top('Gewindefräsen').module.id, 'gewindefraesen');
+  assert.ok(!MODULES.some((m) => m.id === 'gewindefraesen'));
   const m12 = searchAll('M12').map((h) => h.module.id);
   assert.equal(m12[0], 'gewinde');
   assert.ok(m12.includes('senkungen') && m12.includes('normteile'));
